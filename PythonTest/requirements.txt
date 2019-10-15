@@ -1,0 +1,13 @@
+scipy
+numpy
+keras
+ipython
+jupyter
+six
+wheel
+matplotlib
+ggplot
+scikit-learn
+pandas
+xlrd
+torch
