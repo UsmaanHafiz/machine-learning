@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 
+#testtext
 # extracts data from an excel file
 def data_extractor(column_values=None, filename='excel-data.xlsx'):
     raw_data = pd.read_excel(filename)
