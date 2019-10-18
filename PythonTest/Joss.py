@@ -110,13 +110,16 @@ class NeuralNet(nn.Module):
         self.layer = nn.Sequential(
                         nn.Linear(input_neurons, hidden_neurons),
                         nn.ReLU(),
-                        nn.Linear(hidden_neurons, hidden_neurons),
+                        nn.Linear(hidden_neurons, hidden_neurons, bias=True),
                         nn.ReLU(),
-                        nn.Linear(hidden_neurons, output_neurons)
-                          )
-    def forward(self,x):
-        x=self.layer(x)
+                        nn.Linear(hidden_neurons, hidden_neurons, bias=True),
+                        nn.ReLU(),
+                        nn.Linear(hidden_neurons, output_neurons))
+
+    def forward(self, x):
+        x = self.layer(x)
         return x
+
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
 def neural_network_trainer(x, y, hidden_neurons=15,learning_rate=0.001,epochs=1000):
