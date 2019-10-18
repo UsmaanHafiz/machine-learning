@@ -103,7 +103,6 @@ def neural_network_input_data_creator(features, label):
 
 
 # creating a NeuralNet class and defining net properties to train a model to take features=>label
-# creating a NeuralNet class to train a model to take features=>label
 class NeuralNet(nn.Module):
     def __init__(self, input_neurons, output_neurons, hidden_neurons):
         super(NeuralNet, self).__init__()
@@ -122,7 +121,7 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, hidden_neurons=15,learning_rate=0.001,epochs=1000):
+def neural_network_trainer(x, y, hidden_neurons=50,learning_rate=0.02,epochs=1000):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = 1
