@@ -1,11 +1,10 @@
+import random
+import numpy as np
 import pandas as pd
+import torch
 from matplotlib import pyplot as plt
 from scipy import stats
-import numpy as np
-import random
-import torch
 from torch import nn
-import torch.nn.functional as F
 from torch.autograd import Variable
 
 
@@ -24,8 +23,8 @@ def fit_evaluator(label, label_correlation):
     SS_residual = np.sum((label - label_correlation) ** 2)
     SS_total = (len(label) - 1) * np.var(label)
     R_squared = 1 - (SS_residual / SS_total)
-    AAD = 100*((1 / len(label)) * np.sum(abs(label - label_correlation) / label))
-    return np.round(R_squared,decimals=2), np.round(AAD,decimals=2)
+    AAD = 100 * ((1 / len(label)) * np.sum(abs(label - label_correlation) / label))
+    return np.round(R_squared, decimals=2), np.round(AAD, decimals=2)
 
 
 # plots a linear fit obtained using np.linregress alongside experimental data
@@ -36,9 +35,10 @@ def linear_plotter(x, y, fit_params, x_label='Molecular weight', y_label='Boilin
     x_range = np.linspace(min(x), max(x), 3)
     m = fit_params[0]
     c = fit_params[1]
-    y_correlation= y * m + c
+    y_correlation = y * m + c
     R_sq, AAD = fit_evaluator(y, y_correlation)
-    plt.plot(x_range, x_range * m + c, label='Straight-line fit \n R^2={} {} AAD ={}'.format(fit_params[2] ** 2,R_sq, AAD))
+    plt.plot(x_range, x_range * m + c,
+             label='Straight-line fit \n R^2={} {} AAD ={}'.format(fit_params[2] ** 2, R_sq, AAD))
     plt.legend()
 
 
@@ -77,7 +77,7 @@ def multivariate_model(features, theta):
 
 # plots experimental data (x,y) and correlation, given features with coefficients stored in theta
 def correlation_plotter(x, y, features, theta, x_label='Molecular weight', y_label='Reduced boiling temperature'):
-    y_correlation=multivariate_model(features,theta)
+    y_correlation = multivariate_model(features, theta)
     R_sq, AAD = fit_evaluator(y, y_correlation)
     plt.scatter(x, y, s=1, label='Experimental data points')
     plt.scatter(x, y_correlation, s=1, label='Empirical correlation \n R^2:{} AAD:{}'.format(R_sq, AAD))
@@ -87,8 +87,8 @@ def correlation_plotter(x, y, features, theta, x_label='Molecular weight', y_lab
 
 
 # prepares data for neural_network_trainer()
-def neural_network_input_data_creator(features, label):
-    sub_range_size=int(0.1 * len(label))
+def nn_data_preparer(features, label):
+    sub_range_size = int(0.1 * len(label))
     training_range = random.sample(range(0, len(label)), sub_range_size)
     test_range = random.sample(list(x for x in list(range(0, len(label))) if x not in training_range), sub_range_size)
     validation_range = list(z for z in list(range(0, len(label))) if z not in (training_range, test_range))
@@ -98,7 +98,7 @@ def neural_network_input_data_creator(features, label):
         X = X.append(feature_data)
     X = torch.tensor(X.transpose().values).float()
     Y = torch.tensor(label[training_range]).float()
-    Y = Y.reshape([Y.size()[0],1], 1)
+    Y = Y.reshape([Y.size()[0], 1], 1)
     return X, Y, training_range, test_range, validation_range
 
 
@@ -107,13 +107,14 @@ class NeuralNet(nn.Module):
     def __init__(self, input_neurons, output_neurons, hidden_neurons):
         super(NeuralNet, self).__init__()
         self.layer = nn.Sequential(
-                        nn.Linear(input_neurons, hidden_neurons),
-                        nn.ReLU(),
-                        nn.Linear(hidden_neurons, hidden_neurons, bias=True),
-                        nn.ReLU(),
-                        nn.Linear(hidden_neurons, hidden_neurons, bias=True),
-                        nn.ReLU(),
-                        nn.Linear(hidden_neurons, output_neurons))
+            nn.ReLU(),
+            nn.Linear(input_neurons, hidden_neurons),
+            nn.ReLU(),
+            nn.Linear(hidden_neurons, hidden_neurons),
+            nn.ReLU(),
+            nn.Linear(hidden_neurons, hidden_neurons),
+            nn.ELU(),
+            nn.Linear(hidden_neurons, output_neurons))
 
     def forward(self, x):
         x = self.layer(x)
@@ -121,30 +122,30 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, hidden_neurons=50,learning_rate=0.02,epochs=1000):
+def neural_network_trainer(x, y, hidden_neurons=15, learning_rate=0.001, epochs=1000):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = 1
-    model = NeuralNet(input_neurons,output_neurons,hidden_neurons)
+    model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
     print(model)
-    #loss_func = torch.nn.BCEWithLogitsLoss()
-   #loss_func = torch.nn.CrossEntropyLoss()
+    # loss_func = torch.nn.BCEWithLogitsLoss()
+    # loss_func = torch.nn.CrossEntropyLoss()
     loss_func = torch.nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(),lr=learning_rate)
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
     x = Variable(x)
     y = Variable(y)
     model.train()
     for epoch in range(epochs):
-        y_pred = model(x) # forward pass
-        loss = loss_func(y_pred,y)  # computing loss
-        optimizer.zero_grad()   # optimising and updating weights
+        y_pred = model(x)  # forward pass
+        loss = loss_func(y_pred, y)  # computing loss
+        optimizer.zero_grad()  # optimising and updating weights
         loss.backward()  # backward pass
-        optimizer.step()    # updating parameters
-        if epoch % 50 == 0:         # plotting and showing learning process
+        optimizer.step()  # updating parameters
+        if epoch % 50 == 0:  # plotting and showing learning process
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
             plt.cla()
-            plt.scatter(x[:,0].data.numpy(), y.data.numpy())
-            plt.scatter(x[:,0].data.numpy(), y_pred.data.numpy())
+            plt.scatter(x[:, 0].data.numpy(), y.data.numpy())
+            plt.scatter(x[:, 0].data.numpy(), y_pred.data.numpy())
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
             plt.pause(0.1)
     return model
@@ -152,18 +153,22 @@ def neural_network_trainer(x, y, hidden_neurons=50,learning_rate=0.02,epochs=100
 
 # takes the trained neural network with accompanying data and evaluates the model based on subset of data
 # can be used for testing and validation
-# def neural_network_evaluator(x, y, drange, features, model, x_label='Molecular weight', y_label = 'Reduced boiling temperature'):
-#     test_feature_input = torch.tensor([features[0][drange], features[1][drange]]).float()
-#     y_correlation = model(test_feature_input)
-#     R_sq, AAD = fit_evaluator(y[drange], y_correlation)
-#     plt.title('Testing neural network fit')
-#     plt.scatter(x[drange], y[drange], s=1, label='Experimental data points')
-#     plt.scatter(x[drange], y_correlation, s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
-#     plt.xlabel(x_label)
-#     plt.ylabel(y_label)
-#     plt.legend()
-
-
+def neural_network_evaluator(features, label, d_range, model, x_label='Molecular weight',
+                             y_label='Reduced boiling temperature'):
+    X = pd.DataFrame()
+    for item in features:
+        feature_data = pd.DataFrame(item[d_range]).transpose()
+        X = X.append(feature_data)
+    X = torch.tensor(X.transpose().values).float()
+    Y = torch.tensor(label[d_range]).float()
+    y_correlation = model(X)
+    R_sq, AAD = fit_evaluator(Y.data.numpy(), y_correlation.data.numpy())
+    plt.title('Testing neural network fit: validation data points')
+    plt.scatter(X[:, 0].numpy(), Y.data.numpy(), s=1, label='Experimental data points')
+    plt.scatter(X[:, 0].numpy(), y_correlation.data.numpy(), s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.legend()
 
 
 # main() function containing operational workflow
@@ -190,12 +195,10 @@ def main():
 
     # now training and evaluating a neural network and plotting and validating results
     plt.figure(3)
-    feature_matrix, label_matrix, training_range, test_range, validation_range =\
-        neural_network_input_data_creator(features, reduced_temp)
-    model = neural_network_trainer(feature_matrix, label_matrix)
-    # neural_network_evaluator(mol_weight, reduced_temp, test_range, features, model)
-    # neural_network_evaluator(mol_weight, reduced_temp, validation_range, features, model)
-
+    feature_matrix, label_matrix, training_range, test_range, validation_range = \
+        nn_data_preparer(features, reduced_temp)
+    model = neural_network_trainer(feature_matrix, label_matrix, hidden_neurons=10, learning_rate=0.002, epochs=500)
+    neural_network_evaluator(features, reduced_temp, validation_range, model)
     # neural_network_validator()
     # neural_network_plotter
 
@@ -204,6 +207,7 @@ def main():
         plt.show(figure=i)
 
     ### END ###
+
 
 # CALLING MAIN FUNCTION
 main()
