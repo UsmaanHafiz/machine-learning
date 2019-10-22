@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from scipy import stats
 from torch import nn
 from torch.autograd import Variable
+from statistics import pvariance
 
 
 # extracts data from an excel file
@@ -20,8 +21,12 @@ def data_extractor(column_values=None, filename='excel-data.xlsx'):
 
 # given a set of experimental label data and predicted label data, returns R^2 and AAD
 def fit_evaluator(label, label_correlation):
-    SS_residual = np.sum((label - label_correlation) ** 2)
-    SS_total = (len(label) - 1) * np.var(label)
+    # print(label.shape)
+    # print(label_correlation.shape)
+    SS_residual = np.sum(np.square((label - label_correlation)))
+    # print('ss residual is    {}'.format(SS_residual))
+    SS_total = (len(label) - 1) * np.var(label,ddof=1)
+    # print(len(label)), print(np.var(label,ddof=1))
     R_squared = 1 - (SS_residual / SS_total)
     AAD = 100 * ((1 / len(label)) * np.sum(abs(label - label_correlation) / label))
     return np.round(R_squared, decimals=2), np.round(AAD, decimals=2)
@@ -36,6 +41,7 @@ def linear_plotter(x, y, fit_params, x_label='Molecular weight', y_label='Boilin
     m = fit_params[0]
     c = fit_params[1]
     y_correlation = y * m + c
+
     R_sq, AAD = fit_evaluator(y, y_correlation)
     plt.plot(x_range, x_range * m + c,
              label='Straight-line fit \n R^2={} {} AAD ={}'.format(fit_params[2] ** 2, R_sq, AAD))
@@ -127,7 +133,7 @@ def neural_network_trainer(x, y, hidden_neurons=15, learning_rate=0.001, epochs=
     input_neurons = x.shape[1]
     output_neurons = 1
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
-    print(model)
+    # print(model)
     # loss_func = torch.nn.BCEWithLogitsLoss()
     # loss_func = torch.nn.CrossEntropyLoss()
     loss_func = torch.nn.MSELoss()
@@ -162,6 +168,7 @@ def neural_network_evaluator(features, label, d_range, model, x_label='Molecular
     X = torch.tensor(X.transpose().values).float()
     Y = torch.tensor(label[d_range]).float()
     y_correlation = model(X)
+    Y = Y.reshape([Y.size()[0], 1], 1)
     R_sq, AAD = fit_evaluator(Y.data.numpy(), y_correlation.data.numpy())
     plt.title('Testing neural network fit: validation data points')
     plt.scatter(X[:, 0].numpy(), Y.data.numpy(), s=1, label='Experimental data points')
@@ -197,7 +204,7 @@ def main():
     plt.figure(3)
     feature_matrix, label_matrix, training_range, test_range, validation_range = \
         nn_data_preparer(features, reduced_temp)
-    model = neural_network_trainer(feature_matrix, label_matrix, hidden_neurons=10, learning_rate=0.002, epochs=500)
+    model = neural_network_trainer(feature_matrix, label_matrix, hidden_neurons=10, learning_rate=0.002, epochs=200)
     neural_network_evaluator(features, reduced_temp, validation_range, model)
     # neural_network_validator()
     # neural_network_plotter
