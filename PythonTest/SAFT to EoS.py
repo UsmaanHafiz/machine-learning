@@ -1,7 +1,7 @@
 # %%
 
 import numpy as np
-from saftgmie import *
+import saftgmie as saft
 
 # %%
 
