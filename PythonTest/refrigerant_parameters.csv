@@ -1,0 +1,3 @@
+﻿component,mol weight,segments,lambda_r,lamdba_a,epsilon,sigma,T crit
+R-1141,46.04,2.00,11.52,6.00,178.79,0.32709,327
+R-1132a,64.03,2.00,11.30,6.00,162.80,0.33312,303.00
