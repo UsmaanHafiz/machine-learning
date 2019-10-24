@@ -8,7 +8,7 @@ from scipy.optimize import fsolve, least_squares
 from dervarnp import *
 import defconst as cst
 import methods as mt
-from plotxvg import *
+# from plotxvg import *
 
 
 class System(object):
