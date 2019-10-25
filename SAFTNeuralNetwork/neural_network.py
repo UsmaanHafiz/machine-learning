@@ -6,7 +6,6 @@ from matplotlib import pyplot as plt
 from scipy import stats
 from torch import nn
 from torch.autograd import Variable
-from statistics import pvariance
 
 
 # extracts data from an excel file
