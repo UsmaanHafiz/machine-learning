@@ -121,7 +121,7 @@ class NeuralNet(nn.Module):
             nn.Linear(hidden_neurons, hidden_neurons),
             nn.ReLU(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.ELU(),
+            nn.ReLU(),
             nn.Linear(hidden_neurons, output_neurons))
 
     def forward(self, x):
@@ -130,7 +130,7 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, hidden_neurons=15, learning_rate=0.01, epochs=100):
+def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.0005, epochs=100):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
@@ -140,8 +140,8 @@ def neural_network_trainer(x, y, hidden_neurons=15, learning_rate=0.01, epochs=1
     # loss_func = torch.nn.CrossEntropyLoss()
     loss_func = torch.nn.MSELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
-    x = Variable(x)
-    y = Variable(y)
+    # x = Variable(x)
+    # y = Variable(y)
     model.train()
     for epoch in range(epochs):
         y_pred = model(x)  # forward pass
@@ -167,16 +167,21 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Molecula
     for item in features:
         feature_data = pd.DataFrame(item[d_range]).transpose()
         X = X.append(feature_data)
+    Y = pd.DataFrame()
     for item in labels:
         label_data = pd.DataFrame(item[d_range]).transpose()
         Y = Y.append(label_data)
+    Y = torch.tensor(Y.values)
     X = torch.tensor(X.transpose().values).float()
-    Y = torch.tensor(X.transpose().values).float()
+    try:
+        Y = Y.float().transpose()
+    except:
+        pass
     y_correlation = model(X)
     R_sq, AAD = fit_evaluator(Y[test_label_index].data.numpy(), y_correlation[test_label_index].data.numpy())
     plt.title('Testing neural network fit: validation data points')
-    plt.scatter(X[:, 0].numpy(), Y[test_label_index].data.numpy(), s=1, label='Experimental data points')
-    plt.scatter(X[:, 0].numpy(), y_correlation[test_label_index].data.numpy(), s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
+    plt.scatter(X[:, 0].numpy(), Y[test_label_index,:].data.numpy(), s=1, label='Experimental data points')
+    plt.scatter(X[:, 0].numpy(), y_correlation[:,test_label_index].data.numpy(), s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.legend()
@@ -194,10 +199,10 @@ def main():
     num_C = data_values[np.where(data_headers == 'No. of C')[0][0]]
     num_F = data_values[np.where(data_headers == 'No. of F')[0][0]]
     num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
-    T_crit = data_values[np.where(data_headers == 'Crit temp /K')[0][0]]
-    P_crit = data_values[np.where(data_headers == 'Crit pressure /Pa')[0][0]]
-    rho_crit = data_values[np.where(data_headers == 'Crit density /[mol/m^3]')[0][0]]
-    T_boil = data_values[np.where(data_headers == 'Standard boil temp /K')[0][0]]
+    # T_crit = data_values[np.where(data_headers == 'Crit temp /K')[0][0]]
+    # P_crit = data_values[np.where(data_headers == 'Crit pressure /Pa')[0][0]]
+    # rho_crit = data_values[np.where(data_headers == 'Crit density /[mol/m^3]')[0][0]]
+    # T_boil = data_values[np.where(data_headers == 'Standard boil temp /K')[0][0]]
 
     # crit_temp = data_values[np.where(data_headers == 'critical temperature (K)')[0][0]]
     # boil_point = data_values[np.where(data_headers == 'boiling point (K)')[0][0]]
@@ -211,8 +216,8 @@ def main():
     # now correlating a reduced boiling temperature, y = Tb/Tc, against o (acentric factor) and MW, using a simple
     # linear coefficient model, then plotting
     # plt.figure(2)
-    features = [mol_weight, temp, spec_vol, pressure, num_C, num_F, num_CC]
-    labels = [T_crit, P_crit, rho_crit, T_boil]
+    features = [mol_weight, temp, num_C, num_F, num_CC]
+    labels = [pressure]
     # theta = multivariate_correlator(features, reduced_temp)
     # correlation_plotter(mol_weight, reduced_temp, features, theta)
 
@@ -220,7 +225,7 @@ def main():
     plt.figure(3)
     feature_matrix, label_matrix, training_range, test_range, validation_range = \
         nn_data_preparer(features, labels)
-    model = neural_network_trainer(feature_matrix, label_matrix, hidden_neurons=10, learning_rate=0.002, epochs=200)
+    model = neural_network_trainer(feature_matrix, label_matrix)
     neural_network_evaluator(features, labels, validation_range, model)
     # neural_network_validator()
     # neural_network_plotter
