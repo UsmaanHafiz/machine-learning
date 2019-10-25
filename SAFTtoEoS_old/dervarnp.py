@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 
 import math
 import numpy as np
@@ -19,7 +19,6 @@ class Var(object):
     count_var = False
     def __init__(self, value):
         checkerr(isinstance(value, (int, float, np.ndarray)), "Use float values for Var object")
-        # if isinstance(value, np.ndarray) and np.isnan(np.sum(value)): print(value)
         self.value = value
         self.children = []
         self.grad_val = None
@@ -30,13 +29,7 @@ class Var(object):
     def __repr__(self):
         if isinstance(self.value, np.ndarray):
             return self.value.__repr__() + ' with grad'
-        if isinstance(self.grad_val, Var):
-            s = ' with Var grad'
-        elif self.grad_val is None:
-            s = ' with undetermined grad'
-        else:
-            s = f' with grad{self.grad_val:11.3e}'
-        return f'{self.value:11.3e}' + s
+        return f'{self.value:11.3e}' + (f' with grad{self.grad_val:11.3e}' if self.grad_val is not None else '')
 
     def set_subject(self):
         self.isreset = False
@@ -44,22 +37,6 @@ class Var(object):
             self.grad_val = np.ones(self.value.shape)
         else:
             self.grad_val = 1.
-
-    def depth(self):
-        if len(self.children) == 0:
-            return 1
-        counts = []
-        for c in self.children:
-            counts.append(c[1].depth())
-        return max(counts) + 1
-
-    def size(self):
-        if len(self.children) == 0:
-            return 1
-        counts = 0
-        for c in self.children:
-            counts += c[1].size()
-        return counts + 1
 
     grad_count = 0
     count_grad = False
@@ -555,7 +532,7 @@ def exp(x, order=Var.order):
 
     return z
 
-def derivative(y, *args, order=1, getvar=False, reset=True):
+def derivative(y, *args, order=1, getvar=False):
     '''
     Calculates dy/dx via automatic differentiation, for any amount of x
     '''
@@ -578,7 +555,6 @@ def derivative(y, *args, order=1, getvar=False, reset=True):
             for x in args:
                 x.reset()
             subj[fx].set_subject()
-            # print('order = ', i+1)
             nxt = [x.grad(getvar=thisvar, order=order-i) for x in args[reduc[fx]:len(args)]]
             nxtsubj += nxt
             nxtreduc += list(range(reduc[fx],len(args)))
@@ -586,9 +562,8 @@ def derivative(y, *args, order=1, getvar=False, reset=True):
         reduc = nxtreduc
         if len(nxtsubj) == 1: result = result + (get_op(nxtsubj[0], getvar),)
         else: result = result + ([get_op(j, getvar) for j in nxtsubj],)
-    if reset:
-        for x in args:
-            x.reset()
+    for x in args:
+        x.reset()
 
     if len(result) == 1: 
         return result[0]
@@ -720,18 +695,8 @@ def main():
     print()
     print('{:18s}'.format("Second dab_ derivatives: "), der[1][1])
     print('{:18s}'.format("Second dab_ der actual: "), - a**3 * exp(-a**2 * b**0.5) + a * b**(-0.5) * exp(-a**2 * b**0.5))
-    print(a_.depth())
     print('='*18)
 
-    a = Var(0.1)
-    b = 0.102*a + 1.323* a**0.5 + 0.453 * a **-0.5 - 0.415 * a**2
-    b.debug = 1
-    print(a.size(), len(a.children))
-    d = 0.1 * exp(-0.4 * b + 0.121 * b ** 2 - 0.314 * log(b))
-    print(a.size(), b.size(), len(a.children), len(b.children))
-    print(derivative(d,a))
-    print(derivative(b,a), derivative(d,b))
-    print(derivative(b,a) * derivative(d,b))
     # print('sin test')
     # Var.set_order(3)
     # x = Var(0.71)

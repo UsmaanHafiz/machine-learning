@@ -2,7 +2,7 @@
 
 import numpy as np
 import csv
-import saftgamma as saft
+import saftgmie as saft
 
 # %%
 fieldnames = ['Refrigerant', 'Temp /K', 'Specific vol /[m^3/mol]', '???', 'Vapour pressure /Pa']
@@ -29,12 +29,11 @@ with open('refrigerant_parameters.csv', 'r') as csv_parameters:
         component_name, mol_weight, N_beads, lambda_r, lambda_a, epsilon, sigma_in_nm, T_crit_known = param_list
         # mol_weight, segments, lambda_r, lambda_a, epsilon =float(mol_weight)
 
-        test_compound = saft.GMieGroup(lambda_r, lambda_a, sigma_in_nm, epsilon, molar_weight=mol_weight, shape_factor=1, id_seg=1)
-        s = saft.SAFTVRSystem().quick_set((saft.GMieComponent().quick_set((test_compound, int(N_beads))), 1000))
+        test_compound = saft.GroupType(lambda_r, lambda_a, sigma_in_nm, epsilon, shape_factor=1, id_seg=1)
+        s = saft.System().quick_set((saft.Component(mol_weight).quick_set((test_compound, int(N_beads))), 1000))
         print(s)
 
-        Pc, Tc, vc = s.critical_point(initial_t=0.9*T_crit_known, v_nd=np.logspace(-3.5, -0.5, 50), print_progress=True,
-                                      get_volume=True, print_results=False)
+        Pc, Tc, vc = s.critical_point(initial_t=0.3*T_crit_known, v_nd=np.logspace(-4, -2, 70), print_progress=True, get_volume=True)
         print(Pc, Tc, vc)
 
         temp_range = np.linspace(0.5 * Tc, 0.95 * Tc, 10)

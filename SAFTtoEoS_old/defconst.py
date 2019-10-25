@@ -8,7 +8,6 @@ h = 6.62607004e-34 # m2 kg s-1
 au = 1.660539040e-27 # kg / amu
 mass_e = 9.10938356e-31 # kg
 nmtom = 1e-9 # m / nm
-atom = 1e-10 # m / Angstrom
 patobar= 1e-5
 
 
