@@ -33,7 +33,7 @@ with open('refrigerant_parameters.csv', 'r') as csv_parameters:
         s = saft.System().quick_set((saft.Component(mol_weight).quick_set((test_compound, int(N_beads))), 1000))
         print(s)
 
-        Pc, Tc, vc = s.critical_point(initial_t=0.9*T_crit_known, v_nd=np.logspace(-4, -2, 70), print_progress=True, get_volume=True)
+        Pc, Tc, vc = s.critical_point(initial_t=0.3*T_crit_known, v_nd=np.logspace(-4, -2, 70), print_progress=True, get_volume=True)
         print(Pc, Tc, vc)
 
         temp_range = np.linspace(0.5 * Tc, 0.95 * Tc, 10)

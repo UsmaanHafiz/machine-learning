@@ -10,7 +10,7 @@ from statistics import pvariance
 
 
 # extracts data from an excel file
-def data_extractor(column_values=None, filename='excel-data.xlsx'):
+def data_extractor(column_values=None, filename='refrigerant_data.xlsx'):
     raw_data = pd.read_excel(filename)
     column_names = raw_data.columns.values
     column_values = []
@@ -93,18 +93,21 @@ def correlation_plotter(x, y, features, theta, x_label='Molecular weight', y_lab
 
 
 # prepares data for neural_network_trainer()
-def nn_data_preparer(features, label):
-    sub_range_size = int(0.1 * len(label))
-    training_range = random.sample(range(0, len(label)), sub_range_size)
-    test_range = random.sample(list(x for x in list(range(0, len(label))) if x not in training_range), sub_range_size)
-    validation_range = list(z for z in list(range(0, len(label))) if z not in (training_range, test_range))
+def nn_data_preparer(features, labels):
+    sub_range_size = int(0.1 * len(labels[0]))
+    training_range = random.sample(range(0, len(labels[0])), sub_range_size)
+    test_range = random.sample(list(x for x in list(range(0, len(labels[0]))) if x not in training_range), sub_range_size)
+    validation_range = list(z for z in list(range(0, len(labels[0]))) if z not in (training_range, test_range))
     X = pd.DataFrame()
+    Y = pd.DataFrame()
     for item in features:
         feature_data = pd.DataFrame(item[training_range]).transpose()
         X = X.append(feature_data)
+    for item in labels:
+        label_data = pd.DataFrame(item[training_range]).transpose()
+        Y = Y.append(label_data)
     X = torch.tensor(X.transpose().values).float()
-    Y = torch.tensor(label[training_range]).float()
-    Y = Y.reshape([Y.size()[0], 1], 1)
+    Y = torch.tensor(Y.transpose().values).float()
     return X, Y, training_range, test_range, validation_range
 
 
@@ -128,10 +131,10 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, hidden_neurons=15, learning_rate=0.001, epochs=1000):
+def neural_network_trainer(x, y, hidden_neurons=15, learning_rate=0.01, epochs=100):
     # setting model parameters
     input_neurons = x.shape[1]
-    output_neurons = 1
+    output_neurons = y.shape[1]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
     # print(model)
     # loss_func = torch.nn.BCEWithLogitsLoss()
@@ -147,11 +150,11 @@ def neural_network_trainer(x, y, hidden_neurons=15, learning_rate=0.001, epochs=
         optimizer.zero_grad()  # optimising and updating weights
         loss.backward()  # backward pass
         optimizer.step()  # updating parameters
-        if epoch % 50 == 0:  # plotting and showing learning process
+        if epoch % 10 == 0:  # plotting and showing learning process
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
             plt.cla()
-            plt.scatter(x[:, 0].data.numpy(), y.data.numpy())
-            plt.scatter(x[:, 0].data.numpy(), y_pred.data.numpy())
+            plt.scatter(x[:, 0].data.numpy(), y[:, 0].data.numpy())
+            plt.scatter(x[:, 0].data.numpy(), y_pred[:, 0].data.numpy())
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
             plt.pause(0.1)
     return model
@@ -159,20 +162,22 @@ def neural_network_trainer(x, y, hidden_neurons=15, learning_rate=0.001, epochs=
 
 # takes the trained neural network with accompanying data and evaluates the model based on subset of data
 # can be used for testing and validation
-def neural_network_evaluator(features, label, d_range, model, x_label='Molecular weight',
-                             y_label='Reduced boiling temperature'):
+def neural_network_evaluator(features, labels, d_range, model, x_label='Molecular weight',
+                             y_label='Reduced boiling temperature', test_label_index=0):
     X = pd.DataFrame()
     for item in features:
         feature_data = pd.DataFrame(item[d_range]).transpose()
         X = X.append(feature_data)
+    for item in labels:
+        label_data = pd.DataFrame(item[d_range]).transpose()
+        Y = Y.append(label_data)
     X = torch.tensor(X.transpose().values).float()
-    Y = torch.tensor(label[d_range]).float()
+    Y = torch.tensor(X.transpose().values).float()
     y_correlation = model(X)
-    Y = Y.reshape([Y.size()[0], 1], 1)
-    R_sq, AAD = fit_evaluator(Y.data.numpy(), y_correlation.data.numpy())
+    R_sq, AAD = fit_evaluator(Y[test_label_index].data.numpy(), y_correlation[test_label_index].data.numpy())
     plt.title('Testing neural network fit: validation data points')
-    plt.scatter(X[:, 0].numpy(), Y.data.numpy(), s=1, label='Experimental data points')
-    plt.scatter(X[:, 0].numpy(), y_correlation.data.numpy(), s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
+    plt.scatter(X[:, 0].numpy(), Y[test_label_index].data.numpy(), s=1, label='Experimental data points')
+    plt.scatter(X[:, 0].numpy(), y_correlation[test_label_index].data.numpy(), s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.legend()
@@ -182,30 +187,42 @@ def neural_network_evaluator(features, label, d_range, model, x_label='Molecular
 def main():
     # extracting data
     (data_headers, data_values) = data_extractor()
-    mol_weight = data_values[np.where(data_headers == 'molweight')[0][0]]
-    crit_temp = data_values[np.where(data_headers == 'critical temperature (K)')[0][0]]
-    boil_point = data_values[np.where(data_headers == 'boiling point (K)')[0][0]]
-    acentric_factor = data_values[np.where(data_headers == 'acentric factor')[0][0]]
+    r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
+    temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
+    spec_vol = data_values[np.where(data_headers == 'Spec vol /[m^3/mol]')[0][0]]
+    pressure = data_values[np.where(data_headers == 'Vapour pressure /Pa')[0][0]]
+    mol_weight = data_values[np.where(data_headers == 'Molecular weight')[0][0]]
+    num_C = data_values[np.where(data_headers == 'No. of C')[0][0]]
+    num_F = data_values[np.where(data_headers == 'No. of F')[0][0]]
+    num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
+    T_crit = data_values[np.where(data_headers == 'Crit temp /K')[0][0]]
+    P_crit = data_values[np.where(data_headers == 'Crit pressure /Pa')[0][0]]
+    rho_crit = data_values[np.where(data_headers == 'Crit density /[mol/m^3]')[0][0]]
+    T_boil = data_values[np.where(data_headers == 'Standard boil temp /K')[0][0]]
+
+    # crit_temp = data_values[np.where(data_headers == 'critical temperature (K)')[0][0]]
+    # boil_point = data_values[np.where(data_headers == 'boiling point (K)')[0][0]]
+    # acentric_factor = data_values[np.where(data_headers == 'acentric factor')[0][0]]
 
     # plotting raw data and carrying out and plotting a linear regression
-    plt.figure(1)
-    linear_fit = linear_regression(mol_weight, boil_point)
-    linear_plotter(mol_weight, boil_point, linear_fit)
+    # plt.figure(1)
+    # linear_fit = linear_regression(mol_weight, boil_point)
+    # linear_plotter(mol_weight, boil_point, linear_fit)
 
     # now correlating a reduced boiling temperature, y = Tb/Tc, against o (acentric factor) and MW, using a simple
     # linear coefficient model, then plotting
-    plt.figure(2)
-    reduced_temp = boil_point / crit_temp
-    features = [mol_weight, acentric_factor]
-    theta = multivariate_correlator(features, reduced_temp)
-    correlation_plotter(mol_weight, reduced_temp, features, theta)
+    # plt.figure(2)
+    features = [mol_weight, temp, spec_vol, pressure, num_C, num_F, num_CC]
+    labels = [T_crit, P_crit, rho_crit, T_boil]
+    # theta = multivariate_correlator(features, reduced_temp)
+    # correlation_plotter(mol_weight, reduced_temp, features, theta)
 
     # now training and evaluating a neural network and plotting and validating results
     plt.figure(3)
     feature_matrix, label_matrix, training_range, test_range, validation_range = \
-        nn_data_preparer(features, reduced_temp)
+        nn_data_preparer(features, labels)
     model = neural_network_trainer(feature_matrix, label_matrix, hidden_neurons=10, learning_rate=0.002, epochs=200)
-    neural_network_evaluator(features, reduced_temp, validation_range, model)
+    neural_network_evaluator(features, labels, validation_range, model)
     # neural_network_validator()
     # neural_network_plotter
 
