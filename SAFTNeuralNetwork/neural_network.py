@@ -122,6 +122,10 @@ class NeuralNet(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_neurons, hidden_neurons),
             nn.ReLU(),
+            nn.Linear(hidden_neurons, hidden_neurons),
+            nn.ReLU(),
+            nn.Linear(hidden_neurons, hidden_neurons),
+            nn.ReLU(),
             nn.Linear(hidden_neurons, output_neurons))
 
     def forward(self, x):
@@ -130,7 +134,7 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.0005, epochs=100):
+def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=7, epochs=1000):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
@@ -139,9 +143,9 @@ def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.0005, epochs
     # loss_func = torch.nn.BCEWithLogitsLoss()
     # loss_func = torch.nn.CrossEntropyLoss()
     loss_func = torch.nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
-    # x = Variable(x)
-    # y = Variable(y)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    x = Variable(x)
+    y = Variable(y)
     model.train()
     for epoch in range(epochs):
         y_pred = model(x)  # forward pass
@@ -149,11 +153,11 @@ def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.0005, epochs
         optimizer.zero_grad()  # optimising and updating weights
         loss.backward()  # backward pass
         optimizer.step()  # updating parameters
-        if epoch % 10 == 0:  # plotting and showing learning process
+        if epoch % 50 == 0:  # plotting and showing learning process
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
             plt.cla()
-            plt.scatter(x[:, 0].data.numpy(), y[:, 0].data.numpy())
-            plt.scatter(x[:, 0].data.numpy(), y_pred[:, 0].data.numpy())
+            plt.scatter(x[:, 1].data.numpy(), y[0,:].data.numpy())
+            plt.scatter(x[:, 1].data.numpy(), y_pred[:, 0].data.numpy())
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
             plt.pause(0.1)
     return model
@@ -180,8 +184,8 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Molecula
     y_correlation = model(X)
     R_sq, AAD = fit_evaluator(Y[test_label_index].data.numpy(), y_correlation[test_label_index].data.numpy())
     plt.title('Testing neural network fit: validation data points')
-    plt.scatter(X[:, 0].numpy(), Y[test_label_index,:].data.numpy(), s=1, label='Experimental data points')
-    plt.scatter(X[:, 0].numpy(), y_correlation[:,test_label_index].data.numpy(), s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
+    plt.scatter(X[:, 1].numpy(), Y[0,:].data.numpy(), s=1, label='Experimental data points')
+    plt.scatter(X[:, 1].numpy(), y_correlation[:,test_label_index].data.numpy(), s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.legend()
