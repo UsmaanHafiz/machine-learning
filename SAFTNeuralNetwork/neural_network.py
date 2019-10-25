@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from scipy import stats
 from torch import nn
 from torch.autograd import Variable
+from time import sleep
 
 
 # extracts data from an excel file
@@ -147,6 +148,8 @@ def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=7, epochs=1000
     x = Variable(x)
     y = Variable(y)
     model.train()
+    plt.cla()
+    sleep(50)
     for epoch in range(epochs):
         y_pred = model(x)  # forward pass
         loss = loss_func(y_pred, y)  # computing loss
@@ -155,11 +158,11 @@ def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=7, epochs=1000
         optimizer.step()  # updating parameters
         if epoch % 50 == 0:  # plotting and showing learning process
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
-            plt.cla()
-            plt.scatter(x[:, 1].data.numpy(), y[0,:].data.numpy())
-            plt.scatter(x[:, 1].data.numpy(), y_pred[:, 0].data.numpy())
+            plt.scatter(x[:, 1].data.numpy(), y[:, 0].data.numpy(), color='orange')
+            plt.scatter(x[:, 1].data.numpy(), y_pred[:, 0].data.numpy(), color='blue')
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
             plt.pause(0.1)
+    sleep(5)
     return model
 
 
@@ -184,8 +187,8 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Molecula
     y_correlation = model(X)
     R_sq, AAD = fit_evaluator(Y[test_label_index].data.numpy(), y_correlation[test_label_index].data.numpy())
     plt.title('Testing neural network fit: validation data points')
-    plt.scatter(X[:, 1].numpy(), Y[0,:].data.numpy(), s=1, label='Experimental data points')
-    plt.scatter(X[:, 1].numpy(), y_correlation[:,test_label_index].data.numpy(), s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
+    plt.scatter(X[:, 1].numpy(), Y[:,0].data.numpy(), color ='orange', s=1, label='Experimental data points')
+    plt.scatter(X[:, 1].numpy(), y_correlation[:,0].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.legend()
