@@ -2,9 +2,13 @@ import random
 import numpy as np
 import pandas as pd
 import torch
+import matplotlib
 from matplotlib import pyplot as plt
 from scipy import stats
 from torch import nn
+
+# matplotlib.use('TkAgg')
+
 from torch.autograd import Variable
 from time import sleep
 
@@ -135,16 +139,14 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.03, epochs=10000):
+def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.03, epochs=5000):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
-    # print(model)
-    # loss_func = torch.nn.BCEWithLogitsLoss()
-    # loss_func = torch.nn.CrossEntropyLoss()
+    print(model)
     loss_func = torch.nn.MSELoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, amsgrad=True)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
     # x = Variable(x)
     # y = Variable(y)
     model.train()
@@ -155,13 +157,22 @@ def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.03, epochs=1
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
         print('epoch: {}; loss: {}'.format(epoch, loss.item()))
+        plt.figure(1)
+        plt.scatter(epoch, loss.item(), s=1)
+        plt.xlabel('Epoch'), plt.ylabel('Loss')
         if epoch % 100 == 0:  # plotting and showing learning process
+            plt.figure(2)
             plt.clf()
             plt.scatter(x[:, 1].data.numpy(), y[:, 0].data.numpy(), color='orange', s=1)
             plt.scatter(x[:, 1].data.numpy(), y_pred[:, 0].data.numpy(), color='blue', s=1)
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
-            plt.pause(0.001)
-    plt.close('all')
+            # plt.scatter(y[:, 0].data.numpy(), y_pred[:, 0].data.numpy())
+            # plt.plot(np.linspace(0, 5000000, 5), np.linspace(0, 5000000, 5))
+            # plt.ylim((0, 5000000)), plt.xlim(0, 5000000)
+            # plt.xlabel('Actual values')
+            # plt.ylabel('Predicted values')
+            plt.pause(0.0001)
+    # plt.close('all')
     return model
 
 
@@ -182,7 +193,7 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     plt.legend()
     plt.figure()
     plt.title('Testing neural network fit: Predicted pressures for validation points')
-    plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy())
+    plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy(),s=1)
     plt.plot(np.linspace(0, 5000000, 5), np.linspace(0, 5000000, 5))
     plt.ylim((0, 5000000)), plt.xlim(0, 5000000)
     plt.xlabel('Actual values')
@@ -215,26 +226,23 @@ def main():
     # linear_fit = linear_regression(mol_weight, boil_point)
     # linear_plotter(mol_weight, boil_point, linear_fit)
 
-    # now correlating a reduced boiling temperature, y = Tb/Tc, against o (acentric factor) and MW, using a simple
-    # linear coefficient model, then plotting
+    # setting features and labels
     # plt.figure(2)
     features = [mol_weight, temp, num_C, num_F, num_CC]
     labels = [pressure]
     # theta = multivariate_correlator(features, reduced_temp)
     # correlation_plotter(mol_weight, reduced_temp, features, theta)
-
     # now training and evaluating a neural network and plotting and validating results
     feature_matrix, label_matrix, training_range, test_range, validation_range = \
         nn_data_preparer(features, labels)
     model = neural_network_trainer(feature_matrix, label_matrix)
-    plt.figure()
     neural_network_evaluator(features, labels, validation_range, model)
     # neural_network_validator()
     # neural_network_plotter
 
     # bringing up figures
-    for i in range(1, 3):
-        plt.show(figure=i)
+    # for i in range(1, 3):
+    #     plt.show(figure=i)
 
     ### END ###
 
