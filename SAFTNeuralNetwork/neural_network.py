@@ -139,7 +139,7 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.03, epochs=5000):
+def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.003, epochs=25000):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
@@ -156,11 +156,13 @@ def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.03, epochs=5
         loss.backward()  # backward pass
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
-        print('epoch: {}; loss: {}'.format(epoch, loss.item()))
+        # print('epoch: {}; loss: {}'.format(epoch, loss.item()))
         plt.figure(1)
         plt.scatter(epoch, loss.item(), s=1)
+        plt.ylim(0, 2*loss.item()), plt.xlim(0, epoch)
         plt.xlabel('Epoch'), plt.ylabel('Loss')
         if epoch % 100 == 0:  # plotting and showing learning process
+            print('epoch: {}; loss: {}'.format(epoch, loss.item()))
             plt.figure(2)
             plt.clf()
             plt.scatter(x[:, 1].data.numpy(), y[:, 0].data.numpy(), color='orange', s=1)
