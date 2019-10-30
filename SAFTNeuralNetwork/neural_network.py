@@ -6,9 +6,7 @@ import matplotlib
 from matplotlib import pyplot as plt
 from scipy import stats
 from torch import nn
-
 # matplotlib.use('TkAgg')
-
 from torch.autograd import Variable
 from time import sleep
 
@@ -81,7 +79,6 @@ def matrix_to_tensor(array, data_range):
     return torch.tensor(frame.transpose().values).float()
 
 
-
 # prepares data for neural_network_trainer()
 def nn_data_preparer(features, labels):
     sub_range_size = int(0.4 * len(labels[0]))
@@ -98,17 +95,17 @@ class NeuralNet(nn.Module):
     def __init__(self, input_neurons, output_neurons, hidden_neurons):
         super(NeuralNet, self).__init__()
         self.layer = nn.Sequential(
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(input_neurons, hidden_neurons),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(hidden_neurons, output_neurons))
 
     def forward(self, x):
@@ -117,17 +114,17 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.003, epochs=25000):
+def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.003, epochs=1000):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
+    model.train()
     print(model)
     loss_func = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
     # x = Variable(x)
     # y = Variable(y)
-    model.train()
     for epoch in range(epochs):
         y_pred = model(x)  # forward pass
         loss = loss_func(y_pred, y)  # computing loss
@@ -146,6 +143,7 @@ def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.003, epochs=
             plt.scatter(x[:, 1].data.numpy(), y[:, 0].data.numpy(), color='orange', s=1)
             plt.scatter(x[:, 1].data.numpy(), y_pred[:, 0].data.numpy(), color='blue', s=1)
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
+            plt.xlabel('Reduced temperature'), plt.ylabel('Pressure /bar')
             # plt.scatter(y[:, 0].data.numpy(), y_pred[:, 0].data.numpy())
             # plt.plot(np.linspace(0, 5000000, 5), np.linspace(0, 5000000, 5))
             # plt.ylim((0, 5000000)), plt.xlim(0, 5000000)
@@ -173,25 +171,28 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     plt.legend()
     plt.figure()
     plt.title('Testing neural network fit: Predicted pressures for validation points')
-    plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy(),s=1)
-    plt.plot(np.linspace(0, 5000000, 5), np.linspace(0, 5000000, 5))
-    plt.ylim((0, 5000000)), plt.xlim(0, 5000000)
+    plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy(), s=1)
+    plt.plot(np.linspace(0, 5000000/101300, 5), np.linspace(0, 5000000/101300, 5))
+    plt.ylim((0, 5000000/101300)), plt.xlim(0, 5000000/101300)
     plt.xlabel('Actual values')
     plt.ylabel('Predicted values')
 
 # # main() function containing operational workflow
 # def main():
     # extracting data
-(data_headers, data_values) = data_extractor()
+(data_headers, data_values) = data_extractor(filename='data_storage.xlsx')
 r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
 temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
+temp_crit_saft = data_values[np.where(data_headers == 'Predicted crit temp /K')[0][0]]
 omega = data_values[np.where(data_headers == 'Acentric factor')[0][0]]
 spec_vol = data_values[np.where(data_headers == 'Spec vol /[m^3/mol]')[0][0]]
 pressure = data_values[np.where(data_headers == 'Vapour pressure /Pa')[0][0]]
+pressure = pressure/101300  # converting to bar
 mol_weight = data_values[np.where(data_headers == 'Molecular weight')[0][0]]
 num_C = data_values[np.where(data_headers == 'No. of C')[0][0]]
 num_F = data_values[np.where(data_headers == 'No. of F')[0][0]]
 num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
+
 # T_crit = data_values[np.where(data_headers == 'Crit temp /K')[0][0]]
 # P_crit = data_values[np.where(data_headers == 'Crit pressure /Pa')[0][0]]
 # rho_crit = data_values[np.where(data_headers == 'Crit density /[mol/m^3]')[0][0]]
@@ -203,15 +204,16 @@ num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
 
 # setting features and labels
 # plt.figure(2)
-features = [mol_weight, temp, num_C, num_F, num_CC]
+reduced_temp = temp/temp_crit_saft
+features = [mol_weight, reduced_temp, num_C, num_F, num_CC, omega]
 labels = [pressure]
 # theta = multivariate_correlator(features, reduced_temp)
 # correlation_plotter(mol_weight, reduced_temp, features, theta)
 # now training and evaluating a neural network and plotting and validating results
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
     nn_data_preparer(features, labels)
-model = neural_network_trainer(feature_matrix, label_matrix)
-neural_network_evaluator(features, labels, validation_range, model)
+trained_nn = neural_network_trainer(feature_matrix, label_matrix)
+neural_network_evaluator(features, labels, validation_range, trained_nn)
 # neural_network_validator()
 # neural_network_plotter
 
@@ -223,4 +225,4 @@ neural_network_evaluator(features, labels, validation_range, model)
 
 
 # CALLING MAIN FUNCTION
-main()
+# main()
