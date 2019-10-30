@@ -114,7 +114,7 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.003, epochs=1000):
+def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.004, epochs=1000):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
@@ -158,27 +158,31 @@ def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.003, epochs=
 # can be used for testing and validation
 def neural_network_evaluator(features, labels, d_range, model, x_label='Temperature /K',
                              y_label='Vapour pressure /Pa', test_label_index=0):
+    model.eval()
     X = matrix_to_tensor(features, d_range)
     Y = matrix_to_tensor(labels, d_range)
     y_correlation = model(X)
     R_sq, AAD = fit_evaluator(Y[test_label_index].data.numpy(), y_correlation[test_label_index].data.numpy())
+    loss_func = torch.nn.MSELoss()
+    validation_loss = loss_func(y_correlation, Y).item()
     plt.figure()
     plt.title('Testing neural network fit: validation data points')
     plt.scatter(X[:, 1].numpy(), Y[:,0].data.numpy(), color ='orange', s=1, label='Experimental data points')
     plt.scatter(X[:, 1].numpy(), y_correlation[:,0].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
+    plt.xlabel(x_label), plt.ylabel(y_label)
     plt.legend()
     plt.figure()
     plt.title('Testing neural network fit: Predicted pressures for validation points')
     plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy(), s=1)
     plt.plot(np.linspace(0, 5000000/101300, 5), np.linspace(0, 5000000/101300, 5))
     plt.ylim((0, 5000000/101300)), plt.xlim(0, 5000000/101300)
-    plt.xlabel('Actual values')
-    plt.ylabel('Predicted values')
+    print(validation_loss)
+    plt.text(0.5, 0, 'Loss=%.4f' % validation_loss, fontdict={'size': 10, 'color': 'red'})
+    plt.xlabel('Actual values'), plt.ylabel('Predicted values')
 
 # # main() function containing operational workflow
 # def main():
+plt.close('all')
     # extracting data
 (data_headers, data_values) = data_extractor(filename='data_storage.xlsx')
 r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
