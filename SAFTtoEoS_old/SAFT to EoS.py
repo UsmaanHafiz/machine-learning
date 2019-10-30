@@ -5,7 +5,7 @@ import csv
 import saftgmie as saft
 
 # %%
-fieldnames = ['Refrigerant', 'Temp /K', 'Specific vol /[m^3/mol]', '???', 'Vapour pressure /Pa']
+fieldnames = ['Refrigerant', 'Molecular weight', 'Known crit temp /K', 'Acentric factor', 'No. of C', 'No. of F', 'No. of C=C', 'Temp /K', 'Spec vol /[m^3/mol]', '???', 'Vapour pressure /Pa']
 with open('data_storage.csv', 'w') as csv_file:
     writer = csv.DictWriter(csv_file, fieldnames=fieldnames, dialect='excel', lineterminator='\n')
     writer.writeheader()
@@ -22,21 +22,19 @@ with open('data_storage.csv', 'w') as csv_file:
 with open('refrigerant_parameters.csv', 'r') as csv_parameters:
     reader = csv.reader(csv_parameters)
     next(reader)
+    crit_params_list = []
     for row in reader:
         param_list = []
         param_list += (float(i) for i in row[1:len(row)])
         param_list.insert(0, row[0])
-        component_name, mol_weight, N_beads, lambda_r, lambda_a, epsilon, sigma_in_nm, T_crit_known = param_list
-        # mol_weight, segments, lambda_r, lambda_a, epsilon =float(mol_weight)
-
+        component_name, acentric_factor, num_C, num_F, num_CC, mol_weight, N_beads, lambda_r, lambda_a, epsilon, sigma_in_nm, T_crit_known = param_list
         test_compound = saft.GroupType(lambda_r, lambda_a, sigma_in_nm, epsilon, shape_factor=1, id_seg=1)
         s = saft.System().quick_set((saft.Component(mol_weight).quick_set((test_compound, int(N_beads))), 1000))
-        print(s)
-
-        Pc, Tc, vc = s.critical_point(initial_t=0.3*T_crit_known, v_nd=np.logspace(-4, -2, 70), print_progress=True, get_volume=True)
+        print(s), print(component_name)
+        Pc, Tc, vc = s.critical_point(initial_t=0.95*T_crit_known, v_nd=np.logspace(-4, -2, 70), print_progress=True, get_volume=True)
         print(Pc, Tc, vc)
-
-        temp_range = np.linspace(0.5 * Tc, 0.95 * Tc, 10)
+        crit_params_list.append((component_name, Pc, Tc, vc))
+        temp_range = np.linspace(0.5 * Tc, 0.9 * Tc, 100)
         with open('data_storage.csv', 'a') as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames, dialect='excel', lineterminator='\n')
             for i in range(len(temp_range)):
@@ -51,8 +49,10 @@ with open('refrigerant_parameters.csv', 'r') as csv_parameters:
                         print('VLE failed to converge')
                         vle = ig
                     print(t, vle, pv)
-                    writer.writerow({fieldnames[0]: component_name, fieldnames[1]: t, fieldnames[2]: vle[0],
-                                     fieldnames[3]: vle[1], fieldnames[4]: pv})
+                    writer.writerow({fieldnames[0]: component_name, fieldnames[1]: mol_weight, fieldnames[2]: Tc,
+                                     fieldnames[3]: acentric_factor, fieldnames[4]: num_C,
+                                     fieldnames[5]: num_F, fieldnames[6]: num_CC, fieldnames[7]: t, fieldnames[8]: vle[0],
+                                     fieldnames[9]: vle[1], fieldnames[10]: pv})
                 except Exception as e:
-                    print('VLE solver failed at temperature ', t)
-                    print(e)
+                    print('VLE solver failed at temperature ', t), print(e)
+    print(crit_params_list)

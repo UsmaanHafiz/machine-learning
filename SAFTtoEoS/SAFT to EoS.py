@@ -37,6 +37,7 @@ with open('refrigerant_parameters.csv', 'r') as csv_parameters:
                                       get_volume=True, print_results=False)
         print(Pc, Tc, vc)
 
+
         temp_range = np.linspace(0.5 * Tc, 0.95 * Tc, 10)
         with open('data_storage.csv', 'a') as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames, dialect='excel', lineterminator='\n')

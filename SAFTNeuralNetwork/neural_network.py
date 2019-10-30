@@ -36,28 +36,6 @@ def fit_evaluator(label, label_correlation):
     return np.round(R_squared, decimals=2), np.round(AAD, decimals=2)
 
 
-# plots a linear fit obtained using np.linregress alongside experimental data
-def linear_plotter(x, y, fit_params, x_label='Molecular weight', y_label='Boiling temperature /K'):
-    plt.scatter(x, y, s=1, label='Experimental data')
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    x_range = np.linspace(min(x), max(x), 3)
-    m = fit_params[0]
-    c = fit_params[1]
-    y_correlation = y * m + c
-
-    R_sq, AAD = fit_evaluator(y, y_correlation)
-    plt.plot(x_range, x_range * m + c,
-             label='Straight-line fit \n R^2={} {} AAD ={}'.format(fit_params[2] ** 2, R_sq, AAD))
-    plt.legend()
-
-
-# performs a linear regression on (x, y)
-def linear_regression(x, y):
-    linear_fit = stats.linregress(x, y)  # linear_fit is now a tuple with [gradient, intercept, R, ...]
-    return linear_fit
-
-
 # this function uses matrix algebra to obtain coefficients (in matrix theta) for linear fit of any number of features
 # against a label, such that: label = theta_0 * 1 + theta_1 * feature_1 + ... + theta_N * feature_N
 # ie. Y (100 by 1) = X (100 by 3) * THETA (3 by 1) => THETA = inverse (X * X^T) * X * X^T * Y
@@ -201,50 +179,45 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     plt.xlabel('Actual values')
     plt.ylabel('Predicted values')
 
-# main() function containing operational workflow
-def main():
+# # main() function containing operational workflow
+# def main():
     # extracting data
-    (data_headers, data_values) = data_extractor()
-    r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
-    temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
-    omega = data_values[np.where(data_headers == 'Acentric factor')[0][0]]
-    spec_vol = data_values[np.where(data_headers == 'Spec vol /[m^3/mol]')[0][0]]
-    pressure = data_values[np.where(data_headers == 'Vapour pressure /Pa')[0][0]]
-    mol_weight = data_values[np.where(data_headers == 'Molecular weight')[0][0]]
-    num_C = data_values[np.where(data_headers == 'No. of C')[0][0]]
-    num_F = data_values[np.where(data_headers == 'No. of F')[0][0]]
-    num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
-    # T_crit = data_values[np.where(data_headers == 'Crit temp /K')[0][0]]
-    # P_crit = data_values[np.where(data_headers == 'Crit pressure /Pa')[0][0]]
-    # rho_crit = data_values[np.where(data_headers == 'Crit density /[mol/m^3]')[0][0]]
-    # T_boil = data_values[np.where(data_headers == 'Standard boil temp /K')[0][0]]
+(data_headers, data_values) = data_extractor()
+r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
+temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
+omega = data_values[np.where(data_headers == 'Acentric factor')[0][0]]
+spec_vol = data_values[np.where(data_headers == 'Spec vol /[m^3/mol]')[0][0]]
+pressure = data_values[np.where(data_headers == 'Vapour pressure /Pa')[0][0]]
+mol_weight = data_values[np.where(data_headers == 'Molecular weight')[0][0]]
+num_C = data_values[np.where(data_headers == 'No. of C')[0][0]]
+num_F = data_values[np.where(data_headers == 'No. of F')[0][0]]
+num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
+# T_crit = data_values[np.where(data_headers == 'Crit temp /K')[0][0]]
+# P_crit = data_values[np.where(data_headers == 'Crit pressure /Pa')[0][0]]
+# rho_crit = data_values[np.where(data_headers == 'Crit density /[mol/m^3]')[0][0]]
+# T_boil = data_values[np.where(data_headers == 'Standard boil temp /K')[0][0]]
 
-    # crit_temp = data_values[np.where(data_headers == 'critical temperature (K)')[0][0]]
-    # boil_point = data_values[np.where(data_headers == 'boiling point (K)')[0][0]]
-    # acentric_factor = data_values[np.where(data_headers == 'acentric factor')[0][0]]
+# crit_temp = data_values[np.where(data_headers == 'critical temperature (K)')[0][0]]
+# boil_point = data_values[np.where(data_headers == 'boiling point (K)')[0][0]]
+# acentric_factor = data_values[np.where(data_headers == 'acentric factor')[0][0]]
 
-    # plotting raw data and carrying out and plotting a linear regression
-    # plt.figure(1)
-    # linear_fit = linear_regression(mol_weight, boil_point)
-    # linear_plotter(mol_weight, boil_point, linear_fit)
+# setting features and labels
+# plt.figure(2)
+features = [mol_weight, temp, num_C, num_F, num_CC]
+labels = [pressure]
+# theta = multivariate_correlator(features, reduced_temp)
+# correlation_plotter(mol_weight, reduced_temp, features, theta)
+# now training and evaluating a neural network and plotting and validating results
+feature_matrix, label_matrix, training_range, test_range, validation_range = \
+    nn_data_preparer(features, labels)
+model = neural_network_trainer(feature_matrix, label_matrix)
+neural_network_evaluator(features, labels, validation_range, model)
+# neural_network_validator()
+# neural_network_plotter
 
-    # setting features and labels
-    # plt.figure(2)
-    features = [mol_weight, temp, num_C, num_F, num_CC]
-    labels = [pressure]
-    # theta = multivariate_correlator(features, reduced_temp)
-    # correlation_plotter(mol_weight, reduced_temp, features, theta)
-    # now training and evaluating a neural network and plotting and validating results
-    feature_matrix, label_matrix, training_range, test_range, validation_range = \
-        nn_data_preparer(features, labels)
-    model = neural_network_trainer(feature_matrix, label_matrix)
-    neural_network_evaluator(features, labels, validation_range, model)
-    # neural_network_validator()
-    # neural_network_plotter
-
-    # bringing up figures
-    # for i in range(1, 3):
-    #     plt.show(figure=i)
+# bringing up figures
+# for i in range(1, 3):
+#     plt.show(figure=i)
 
     ### END ###
 
