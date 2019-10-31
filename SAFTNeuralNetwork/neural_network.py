@@ -180,7 +180,7 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     plt.legend()
 
     plt.figure()
-    plt.title('Testing neural network fit: Predicted pressures for test points')
+    plt.title('Testing neural network fit: Predicted pressures for test compounds')
     plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy(), s=1)
     plt.plot(np.linspace(0, 5000000/101300, 5), np.linspace(0, 5000000/101300, 5))
     plt.ylim((0, 5000000/101300)), plt.xlim(0, 5000000/101300)
