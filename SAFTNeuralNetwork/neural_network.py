@@ -71,6 +71,7 @@ def correlation_plotter(x, y, features, theta, x_label='Molecular weight', y_lab
     plt.ylabel(y_label)
     plt.legend()
 
+
 def matrix_to_tensor(array, data_range):
     frame = pd.DataFrame()
     for item in array:
@@ -85,8 +86,8 @@ def nn_data_preparer(features, labels):
     training_range = random.sample(range(0, len(labels[0])), sub_range_size)
     test_range = random.sample(list(x for x in list(range(0, len(labels[0]))) if x not in training_range), sub_range_size)
     validation_range = list(z for z in list(range(0, len(labels[0]))) if z not in (training_range, test_range))
-    X = matrix_to_tensor(features, training_range)
-    Y = matrix_to_tensor(labels, training_range)
+    X = matrix_to_tensor(features, range(0,len(features[0])))
+    Y = matrix_to_tensor(labels, range(0,len(features[0])))
     return X, Y, training_range, test_range, validation_range
 
 
@@ -114,10 +115,12 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.004, epochs=1000):
+def neural_network_trainer(x, y, training_range, hidden_neurons=32, learning_rate=0.005, epochs=30000):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
+    x = x[training_range]
+    y = y[training_range]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
     model.train()
     print(model)
@@ -133,8 +136,11 @@ def neural_network_trainer(x, y, hidden_neurons=32, learning_rate=0.004, epochs=
         optimizer.zero_grad()  # zeroing gradients
         # print('epoch: {}; loss: {}'.format(epoch, loss.item()))
         plt.figure(1)
+        if loss.item() > 0:
+            plt.ylim(0, 3*loss.item()), plt.xlim(0, epoch)
+        if epoch == epochs:
+            print(loss.item())
         plt.scatter(epoch, loss.item(), s=1)
-        plt.ylim(0, 2*loss.item()), plt.xlim(0, epoch)
         plt.xlabel('Epoch'), plt.ylabel('Loss')
         if epoch % 100 == 0:  # plotting and showing learning process
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
@@ -162,17 +168,19 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     X = matrix_to_tensor(features, d_range)
     Y = matrix_to_tensor(labels, d_range)
     y_correlation = model(X)
-    R_sq, AAD = fit_evaluator(Y[test_label_index].data.numpy(), y_correlation[test_label_index].data.numpy())
+    # R_sq, AAD = fit_evaluator(Y[test_label_index].data.numpy(), y_correlation[test_label_index].data.numpy())
+    R_sq, AAD = 1, 1
     loss_func = torch.nn.MSELoss()
     validation_loss = loss_func(y_correlation, Y).item()
     plt.figure()
     plt.title('Testing neural network fit: validation data points')
     plt.scatter(X[:, 1].numpy(), Y[:,0].data.numpy(), color ='orange', s=1, label='Experimental data points')
     plt.scatter(X[:, 1].numpy(), y_correlation[:,0].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
-    plt.xlabel(x_label), plt.ylabel(y_label)
+    plt.xlabel('Reduced boiling temperature'), plt.ylabel('Pressure /bar')
     plt.legend()
+
     plt.figure()
-    plt.title('Testing neural network fit: Predicted pressures for validation points')
+    plt.title('Testing neural network fit: Predicted pressures for test points')
     plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy(), s=1)
     plt.plot(np.linspace(0, 5000000/101300, 5), np.linspace(0, 5000000/101300, 5))
     plt.ylim((0, 5000000/101300)), plt.xlim(0, 5000000/101300)
@@ -216,8 +224,8 @@ labels = [pressure]
 # now training and evaluating a neural network and plotting and validating results
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
     nn_data_preparer(features, labels)
-trained_nn = neural_network_trainer(feature_matrix, label_matrix)
-neural_network_evaluator(features, labels, validation_range, trained_nn)
+trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=20000)
+neural_network_evaluator(features, labels, range(2000, 2300), trained_nn)
 # neural_network_validator()
 # neural_network_plotter
 
