@@ -4,11 +4,8 @@ import pandas as pd
 import torch
 import matplotlib
 from matplotlib import pyplot as plt
-from scipy import stats
 from torch import nn
 # matplotlib.use('TkAgg')
-from torch.autograd import Variable
-from time import sleep
 
 
 # extracts data from an excel file
@@ -32,44 +29,6 @@ def fit_evaluator(label, label_correlation):
     R_squared = 1 - (SS_residual / SS_total)
     AAD = 100 * ((1 / len(label)) * np.sum(abs(label - label_correlation) / label))
     return np.round(R_squared, decimals=2), np.round(AAD, decimals=2)
-
-
-# this function uses matrix algebra to obtain coefficients (in matrix theta) for linear fit of any number of features
-# against a label, such that: label = theta_0 * 1 + theta_1 * feature_1 + ... + theta_N * feature_N
-# ie. Y (100 by 1) = X (100 by 3) * THETA (3 by 1) => THETA = inverse (X * X^T) * X * X^T * Y
-def multivariate_correlator(features, label):
-    training_range = random.sample(range(0, len(label)), int(0.1 * len(label)))
-    X = pd.DataFrame([np.ones(len(training_range))])
-    for item in features:
-        feature_data = pd.DataFrame(item[training_range]).transpose()
-        X = X.append(feature_data)
-    X = X.transpose()
-    Y = label[training_range]
-    inverse_target = (X.transpose().dot(X))
-    target_inversed = pd.DataFrame(np.linalg.pinv(inverse_target.values), inverse_target.columns, inverse_target.index)
-    theta = target_inversed.dot(X.transpose()).dot(Y)
-    return theta
-
-
-# takes features and theta and spits out label values for whole set of features
-def multivariate_model(features, theta):
-    X = pd.DataFrame([np.ones(len(features[0]))])
-    for item in features:
-        feature_data = pd.DataFrame(item).transpose()
-        X = X.append(feature_data)
-    Y = X.transpose().dot(theta)
-    return Y
-
-
-# plots experimental data (x,y) and correlation, given features with coefficients stored in theta
-def correlation_plotter(x, y, features, theta, x_label='Molecular weight', y_label='Reduced boiling temperature'):
-    y_correlation = multivariate_model(features, theta)
-    R_sq, AAD = fit_evaluator(y, y_correlation)
-    plt.scatter(x, y, s=1, label='Experimental data points')
-    plt.scatter(x, y_correlation, s=1, label='Empirical correlation \n R^2:{} AAD:{}'.format(R_sq, AAD))
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.legend()
 
 
 def matrix_to_tensor(array, data_range):
@@ -149,7 +108,7 @@ def neural_network_trainer(x, y, training_range, hidden_neurons=32, learning_rat
             plt.scatter(x[:, 1].data.numpy(), y[:, 0].data.numpy(), color='orange', s=1)
             plt.scatter(x[:, 1].data.numpy(), y_pred[:, 0].data.numpy(), color='blue', s=1)
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
-            plt.xlabel('Reduced temperature'), plt.ylabel('Pressure /bar')
+            plt.xlabel('Reduced temperature'), plt.ylabel('Reduced pressure')
             # plt.scatter(y[:, 0].data.numpy(), y_pred[:, 0].data.numpy())
             # plt.plot(np.linspace(0, 5000000, 5), np.linspace(0, 5000000, 5))
             # plt.ylim((0, 5000000)), plt.xlim(0, 5000000)
@@ -169,17 +128,16 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     Y = matrix_to_tensor(labels, d_range)
     y_correlation = model(X)
     # R_sq, AAD = fit_evaluator(Y[test_label_index].data.numpy(), y_correlation[test_label_index].data.numpy())
-    R_sq, AAD = 1, 1
+    R_sq, AAD = 1, 1  # TODO: Fix this
     loss_func = torch.nn.MSELoss()
     validation_loss = loss_func(y_correlation, Y).item()
-    plt.figure()
+    plt.figure(3)
     plt.title('Testing neural network fit: validation data points')
     plt.scatter(X[:, 1].numpy(), Y[:,0].data.numpy(), color ='orange', s=1, label='Experimental data points')
     plt.scatter(X[:, 1].numpy(), y_correlation[:,0].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
     plt.xlabel('Reduced boiling temperature'), plt.ylabel('Pressure /bar')
     plt.legend()
-
-    plt.figure()
+    plt.figure(4)
     plt.title('Testing neural network fit: Predicted pressures for test compounds')
     plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy(), s=1)
     plt.plot(np.linspace(0, 5000000/101300, 5), np.linspace(0, 5000000/101300, 5))
@@ -196,11 +154,14 @@ plt.close('all')
 r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
 temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
 temp_crit_saft = data_values[np.where(data_headers == 'Predicted crit temp /K')[0][0]]
+pressure_crit_saft = data_values[np.where(data_headers == 'Predicted pressure /Pa')[0][0]]
 omega = data_values[np.where(data_headers == 'Acentric factor')[0][0]]
 spec_vol = data_values[np.where(data_headers == 'Spec vol /[m^3/mol]')[0][0]]
 pressure = data_values[np.where(data_headers == 'Vapour pressure /Pa')[0][0]]
-pressure = pressure/101300  # converting to bar
+# pressure = pressure/101300  # converting to bar
 mol_weight = data_values[np.where(data_headers == 'Molecular weight')[0][0]]
+even_num_carbon = data_values[np.where(data_headers == 'Boolean even no. carbons')[0][0]]
+F_on_central_C = data_values[np.where(data_headers == 'F on central carbon?')[0][0]]
 num_C = data_values[np.where(data_headers == 'No. of C')[0][0]]
 num_F = data_values[np.where(data_headers == 'No. of F')[0][0]]
 num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
@@ -209,30 +170,32 @@ num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
 # P_crit = data_values[np.where(data_headers == 'Crit pressure /Pa')[0][0]]
 # rho_crit = data_values[np.where(data_headers == 'Crit density /[mol/m^3]')[0][0]]
 # T_boil = data_values[np.where(data_headers == 'Standard boil temp /K')[0][0]]
-
-# crit_temp = data_values[np.where(data_headers == 'critical temperature (K)')[0][0]]
 # boil_point = data_values[np.where(data_headers == 'boiling point (K)')[0][0]]
-# acentric_factor = data_values[np.where(data_headers == 'acentric factor')[0][0]]
 
 # setting features and labels
-# plt.figure(2)
 reduced_temp = temp/temp_crit_saft
-features = [mol_weight, reduced_temp, num_C, num_F, num_CC, omega]
-labels = [pressure]
-# theta = multivariate_correlator(features, reduced_temp)
-# correlation_plotter(mol_weight, reduced_temp, features, theta)
-# now training and evaluating a neural network and plotting and validating results
+features = [mol_weight, reduced_temp, num_C, num_F, num_CC, omega, F_on_central_C]
+reduced_pressure = pressure/pressure_crit_saft
+labels = [reduced_pressure]
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
     nn_data_preparer(features, labels)
-trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=20000)
-neural_network_evaluator(features, labels, range(2000, 2300), trained_nn)
-# neural_network_validator()
-# neural_network_plotter
+
+plt.style.use('seaborn-darkgrid')
+plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
+plt.figure(1).patch.set_facecolor('xkcd:light periwinkle')
+plt.figure(2).patch.set_facecolor('xkcd:light periwinkle')
+trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=20000)  # training on all but 3 compounds
+
+plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')
+plt.figure(4).patch.set_facecolor('xkcd:light periwinkle')
+neural_network_evaluator(features, labels, range(2000, 2300), trained_nn)  # evaluating based on 3 unseen compounds
+
+# also need to write additional code to validate model
+
 
 # bringing up figures
 # for i in range(1, 3):
 #     plt.show(figure=i)
-
     ### END ###
 
 

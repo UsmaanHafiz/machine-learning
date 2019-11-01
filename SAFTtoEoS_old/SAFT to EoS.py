@@ -37,8 +37,9 @@ with open('refrigerant_parameters.csv', 'r') as csv_parameters:
         print(Pc, Tc, vc)
         with open('crit_params_storage.csv', 'a') as csv_file:
             writer2 = csv.DictWriter(csv_file, fieldnames=fieldnames2, dialect='excel', lineterminator='\n')
-            writer2.writerow({'Refrigerant': component_name, 'Tc predicted': Tc, 'Pc predicted': Pc, 'vc predicted': vc})
-        temp_range = np.linspace(0.5 * Tc, 0.9 * Tc, 100)
+            for i in range(0, 99):
+                writer2.writerow({'Refrigerant': component_name, 'Tc predicted': Tc, 'Pc predicted': Pc, 'vc predicted': vc})
+        temp_range = np.linspace(0.5 * Tc, 0.9 * Tc, 1)
         with open('data_storage.csv', 'a') as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames, dialect='excel', lineterminator='\n')
             for i in range(len(temp_range)):
