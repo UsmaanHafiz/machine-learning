@@ -74,16 +74,16 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, training_range, hidden_neurons=32, learning_rate=0.005, epochs=30000):
+def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005, epochs=30000, loss_func=torch.nn.MSELoss()):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
-    x = x[training_range]
-    y = y[training_range]
+    x = x[d_range]
+    y = y[d_range]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
     model.train()
     print(model)
-    loss_func = torch.nn.MSELoss()
+
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
     # x = Variable(x)
     # y = Variable(y)
@@ -150,7 +150,7 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
 # def main():
 plt.close('all')
     # extracting data
-(data_headers, data_values) = data_extractor(filename='data_storage.xlsx')
+(data_headers, data_values) = data_extractor(filename='Excel-data.xlsx')
 r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
 temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
 temp_crit_saft = data_values[np.where(data_headers == 'Predicted crit temp /K')[0][0]]
@@ -184,7 +184,8 @@ plt.style.use('seaborn-darkgrid')
 plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
 plt.figure(1).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(2).patch.set_facecolor('xkcd:light periwinkle')
-trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=20000)  # training on all but 3 compounds
+trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=20000, learning_rate=0.005,
+                                    loss_func=torch.nn.SmoothL1Loss())  # training on all but 3 compounds
 
 plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(4).patch.set_facecolor('xkcd:light periwinkle')
