@@ -138,6 +138,7 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     plt.text(0.5, 0, 'Loss=%.4f' % validation_loss, fontdict={'size': 10, 'color': 'red'})
     plt.xlabel('Actual values'), plt.ylabel('Predicted values')
 
+
 # def main():
 plt.close('all')
 (data_headers, data_values) = data_extractor(filename='data_storage.xlsx')
@@ -167,12 +168,12 @@ plt.style.use('seaborn-darkgrid')
 plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
 plt.figure(1).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(2).patch.set_facecolor('xkcd:light periwinkle')
-trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=100, learning_rate=0.005,
-                                    loss_func=torch.nn.SmoothL1Loss())  # training on all but 3 compounds
+trained_nn = neural_network_trainer(feature_matrix, label_matrix, ([i for j in (range(0, 1800), range(2100, 2300)) for i in j]), epochs=100, learning_rate=0.005,
+                                    loss_func=torch.nn.MSELoss())  # training on all but 3 compounds
 
 plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(4).patch.set_facecolor('xkcd:light periwinkle')
-neural_network_evaluator(features, labels, range(2000, 2300), trained_nn)  # evaluating based on 3 unseen compounds
+neural_network_evaluator(features, labels, range(1800, 2100), trained_nn)  # evaluating based on 3 unseen compounds
 
 # also need to write additional code to validate model
 

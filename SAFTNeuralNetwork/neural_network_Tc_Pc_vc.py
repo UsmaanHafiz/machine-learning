@@ -132,7 +132,7 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     plt.figure(4)
     plt.title('Testing neural network fit: Predicted critical temperatures for test compounds')
     plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy(), s=1)
-    plt.plot(np.linspace(0, 5000000/101300, 5), np.linspace(0, 5000000/101300, 5))
+    plt.plot(np.linspace(0, 500, 5), np.linspace(0, 500, 5))
     plt.ylim((0, 5000000/101300)), plt.xlim(0, 5000000/101300)
     print(validation_loss)
     plt.text(0.5, 0, 'Loss=%.4f' % validation_loss, fontdict={'size': 10, 'color': 'red'})
