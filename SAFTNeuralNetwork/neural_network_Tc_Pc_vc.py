@@ -108,7 +108,7 @@ def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005
             plt.scatter(x[:, 1].data.numpy(), y[:, 0].data.numpy(), color='orange', s=1)
             plt.scatter(x[:, 1].data.numpy(), y_pred[:, 0].data.numpy(), color='blue', s=1)
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
-            plt.xlabel('Reduced temperature'), plt.ylabel('Reduced pressure')
+            plt.xlabel('Molecular weight'), plt.ylabel('Critical temperature /K')
             # plt.scatter(y[:, 0].data.numpy(), y_pred[:, 0].data.numpy())
             # plt.plot(np.linspace(0, 5000000, 5), np.linspace(0, 5000000, 5))
             # plt.ylim((0, 5000000)), plt.xlim(0, 5000000)
@@ -135,7 +135,7 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     plt.title('Testing neural network fit: validation data points')
     plt.scatter(X[:, 1].numpy(), Y[:,0].data.numpy(), color ='orange', s=1, label='Experimental data points')
     plt.scatter(X[:, 1].numpy(), y_correlation[:,0].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
-    plt.xlabel('Reduced boiling temperature'), plt.ylabel('Pressure /bar')
+    plt.xlabel('Molecular weight'), plt.ylabel('Critical temperature /K')
     plt.legend()
     plt.figure(4)
     plt.title('Testing neural network fit: Predicted pressures for test compounds')
@@ -151,32 +151,16 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
 plt.close('all')
     # extracting data
 (data_headers, data_values) = data_extractor(filename='Excel-data.xlsx')
-r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
-temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
-temp_crit_saft = data_values[np.where(data_headers == 'Predicted crit temp /K')[0][0]]
-pressure_crit_saft = data_values[np.where(data_headers == 'Predicted pressure /Pa')[0][0]]
-omega = data_values[np.where(data_headers == 'Acentric factor')[0][0]]
-spec_vol = data_values[np.where(data_headers == 'Spec vol /[m^3/mol]')[0][0]]
-pressure = data_values[np.where(data_headers == 'Vapour pressure /Pa')[0][0]]
-# pressure = pressure/101300  # converting to bar
-mol_weight = data_values[np.where(data_headers == 'Molecular weight')[0][0]]
-even_num_carbon = data_values[np.where(data_headers == 'Boolean even no. carbons')[0][0]]
-F_on_central_C = data_values[np.where(data_headers == 'F on central carbon?')[0][0]]
-num_C = data_values[np.where(data_headers == 'No. of C')[0][0]]
-num_F = data_values[np.where(data_headers == 'No. of F')[0][0]]
-num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
+names = data_values[np.where(data_headers == 'name')[0][0]]
+temp_boil = data_values[np.where(data_headers == 'boiling point (K)')[0][0]]
+temp_crit = data_values[np.where(data_headers == 'critical temperature (K)')[0][0]]
+omega = data_values[np.where(data_headers == 'acentric factor')[0][0]]
+mol_weight = data_values[np.where(data_headers == 'molweight')[0][0]]
 
-# T_crit = data_values[np.where(data_headers == 'Crit temp /K')[0][0]]
-# P_crit = data_values[np.where(data_headers == 'Crit pressure /Pa')[0][0]]
-# rho_crit = data_values[np.where(data_headers == 'Crit density /[mol/m^3]')[0][0]]
-# T_boil = data_values[np.where(data_headers == 'Standard boil temp /K')[0][0]]
-# boil_point = data_values[np.where(data_headers == 'boiling point (K)')[0][0]]
 
 # setting features and labels
-reduced_temp = temp/temp_crit_saft
-features = [mol_weight, reduced_temp, num_C, num_F, num_CC, omega, F_on_central_C]
-reduced_pressure = pressure/pressure_crit_saft
-labels = [reduced_pressure]
+features = [omega, mol_weight]
+labels = [temp_crit]
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
     nn_data_preparer(features, labels)
 
@@ -184,7 +168,7 @@ plt.style.use('seaborn-darkgrid')
 plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
 plt.figure(1).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(2).patch.set_facecolor('xkcd:light periwinkle')
-trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=20000, learning_rate=0.005,
+trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=2000, learning_rate=0.005,
                                     loss_func=torch.nn.SmoothL1Loss())  # training on all but 3 compounds
 
 plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')
