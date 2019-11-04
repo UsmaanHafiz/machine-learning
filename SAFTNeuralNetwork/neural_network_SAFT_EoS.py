@@ -74,7 +74,7 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005, epochs=30000, loss_func=torch.nn.MSELoss()):
+def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005, epochs=3000, loss_func=torch.nn.MSELoss()):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
@@ -95,8 +95,7 @@ def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005
         optimizer.zero_grad()  # zeroing gradients
         # print('epoch: {}; loss: {}'.format(epoch, loss.item()))
         plt.figure(1)
-        if loss.item() > 1:
-            plt.ylim(0, 3*loss.item()), plt.xlim(0, epoch)
+        plt.ylim(0, 3*loss.item()), plt.xlim(0, epoch)
         plt.scatter(epoch, loss.item(), s=1)
         plt.xlabel('Epoch'), plt.ylabel('Loss')
         if epoch % 100 == 0:  # plotting and showing learning process
@@ -168,7 +167,7 @@ plt.style.use('seaborn-darkgrid')
 plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
 plt.figure(1).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(2).patch.set_facecolor('xkcd:light periwinkle')
-trained_nn = neural_network_trainer(feature_matrix, label_matrix, ([i for j in (range(0, 1800), range(2100, 2300)) for i in j]), epochs=100, learning_rate=0.005,
+trained_nn = neural_network_trainer(feature_matrix, label_matrix, ([i for j in (range(0, 1800), range(2100, 2300)) for i in j]), epochs=20000, learning_rate=0.001,
                                     loss_func=torch.nn.MSELoss())  # training on all but 3 compounds
 
 plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')
