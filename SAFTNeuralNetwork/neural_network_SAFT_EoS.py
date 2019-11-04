@@ -95,10 +95,8 @@ def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005
         optimizer.zero_grad()  # zeroing gradients
         # print('epoch: {}; loss: {}'.format(epoch, loss.item()))
         plt.figure(1)
-        if loss.item() > 0:
+        if loss.item() > 1:
             plt.ylim(0, 3*loss.item()), plt.xlim(0, epoch)
-        if epoch == epochs:
-            print(loss.item())
         plt.scatter(epoch, loss.item(), s=1)
         plt.xlabel('Epoch'), plt.ylabel('Loss')
         if epoch % 100 == 0:  # plotting and showing learning process
@@ -109,13 +107,7 @@ def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005
             plt.scatter(x[:, 1].data.numpy(), y_pred[:, 0].data.numpy(), color='blue', s=1)
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
             plt.xlabel('Reduced temperature'), plt.ylabel('Reduced pressure')
-            # plt.scatter(y[:, 0].data.numpy(), y_pred[:, 0].data.numpy())
-            # plt.plot(np.linspace(0, 5000000, 5), np.linspace(0, 5000000, 5))
-            # plt.ylim((0, 5000000)), plt.xlim(0, 5000000)
-            # plt.xlabel('Actual values')
-            # plt.ylabel('Predicted values')
             plt.pause(0.0001)
-    # plt.close('all')
     return model
 
 
@@ -140,16 +132,14 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     plt.figure(4)
     plt.title('Testing neural network fit: Predicted pressures for test compounds')
     plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy(), s=1)
-    plt.plot(np.linspace(0, 5000000/101300, 5), np.linspace(0, 5000000/101300, 5))
-    plt.ylim((0, 5000000/101300)), plt.xlim(0, 5000000/101300)
+    plt.plot(np.linspace(0, 1, 5), np.linspace(0, 1, 5))
+    plt.ylim((0, 1)), plt.xlim(0, 1)
     print(validation_loss)
     plt.text(0.5, 0, 'Loss=%.4f' % validation_loss, fontdict={'size': 10, 'color': 'red'})
     plt.xlabel('Actual values'), plt.ylabel('Predicted values')
 
-# # main() function containing operational workflow
 # def main():
 plt.close('all')
-    # extracting data
 (data_headers, data_values) = data_extractor(filename='data_storage.xlsx')
 r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
 temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
@@ -158,19 +148,12 @@ pressure_crit_saft = data_values[np.where(data_headers == 'Predicted pressure /P
 omega = data_values[np.where(data_headers == 'Acentric factor')[0][0]]
 spec_vol = data_values[np.where(data_headers == 'Spec vol /[m^3/mol]')[0][0]]
 pressure = data_values[np.where(data_headers == 'Vapour pressure /Pa')[0][0]]
-# pressure = pressure/101300  # converting to bar
 mol_weight = data_values[np.where(data_headers == 'Molecular weight')[0][0]]
 even_num_carbon = data_values[np.where(data_headers == 'Boolean even no. carbons')[0][0]]
 F_on_central_C = data_values[np.where(data_headers == 'F on central carbon?')[0][0]]
 num_C = data_values[np.where(data_headers == 'No. of C')[0][0]]
 num_F = data_values[np.where(data_headers == 'No. of F')[0][0]]
 num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
-
-# T_crit = data_values[np.where(data_headers == 'Crit temp /K')[0][0]]
-# P_crit = data_values[np.where(data_headers == 'Crit pressure /Pa')[0][0]]
-# rho_crit = data_values[np.where(data_headers == 'Crit density /[mol/m^3]')[0][0]]
-# T_boil = data_values[np.where(data_headers == 'Standard boil temp /K')[0][0]]
-# boil_point = data_values[np.where(data_headers == 'boiling point (K)')[0][0]]
 
 # setting features and labels
 reduced_temp = temp/temp_crit_saft
@@ -184,7 +167,7 @@ plt.style.use('seaborn-darkgrid')
 plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
 plt.figure(1).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(2).patch.set_facecolor('xkcd:light periwinkle')
-trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=20000, learning_rate=0.005,
+trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=100, learning_rate=0.005,
                                     loss_func=torch.nn.SmoothL1Loss())  # training on all but 3 compounds
 
 plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')

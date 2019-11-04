@@ -95,10 +95,8 @@ def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005
         optimizer.zero_grad()  # zeroing gradients
         # print('epoch: {}; loss: {}'.format(epoch, loss.item()))
         plt.figure(1)
-        if loss.item() > 0:
+        if loss.item() > 1:
             plt.ylim(0, 3*loss.item()), plt.xlim(0, epoch)
-        if epoch == epochs:
-            print(loss.item())
         plt.scatter(epoch, loss.item(), s=1)
         plt.xlabel('Epoch'), plt.ylabel('Loss')
         if epoch % 100 == 0:  # plotting and showing learning process
@@ -109,13 +107,7 @@ def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005
             plt.scatter(x[:, 1].data.numpy(), y_pred[:, 0].data.numpy(), color='blue', s=1)
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
             plt.xlabel('Molecular weight'), plt.ylabel('Critical temperature /K')
-            # plt.scatter(y[:, 0].data.numpy(), y_pred[:, 0].data.numpy())
-            # plt.plot(np.linspace(0, 5000000, 5), np.linspace(0, 5000000, 5))
-            # plt.ylim((0, 5000000)), plt.xlim(0, 5000000)
-            # plt.xlabel('Actual values')
-            # plt.ylabel('Predicted values')
             plt.pause(0.0001)
-    # plt.close('all')
     return model
 
 
@@ -138,7 +130,7 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     plt.xlabel('Molecular weight'), plt.ylabel('Critical temperature /K')
     plt.legend()
     plt.figure(4)
-    plt.title('Testing neural network fit: Predicted pressures for test compounds')
+    plt.title('Testing neural network fit: Predicted critical temperatures for test compounds')
     plt.scatter(Y[:,0].data.numpy(), y_correlation[:,0].data.numpy(), s=1)
     plt.plot(np.linspace(0, 5000000/101300, 5), np.linspace(0, 5000000/101300, 5))
     plt.ylim((0, 5000000/101300)), plt.xlim(0, 5000000/101300)
@@ -168,12 +160,12 @@ plt.style.use('seaborn-darkgrid')
 plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
 plt.figure(1).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(2).patch.set_facecolor('xkcd:light periwinkle')
-trained_nn = neural_network_trainer(feature_matrix, label_matrix, range(0, 2000), epochs=2000, learning_rate=0.005,
+trained_nn = neural_network_trainer(feature_matrix, label_matrix, training_range, epochs=2000, learning_rate=0.005,
                                     loss_func=torch.nn.SmoothL1Loss())  # training on all but 3 compounds
 
 plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(4).patch.set_facecolor('xkcd:light periwinkle')
-neural_network_evaluator(features, labels, range(2000, 2300), trained_nn)  # evaluating based on 3 unseen compounds
+neural_network_evaluator(features, labels, test_range, trained_nn)  # evaluating based on 3 unseen compounds
 
 # also need to write additional code to validate model
 
