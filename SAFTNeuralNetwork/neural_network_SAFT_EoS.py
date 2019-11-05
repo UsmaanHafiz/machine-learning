@@ -55,17 +55,13 @@ class NeuralNet(nn.Module):
     def __init__(self, input_neurons, output_neurons, hidden_neurons):
         super(NeuralNet, self).__init__()
         self.layer = nn.Sequential(
-            nn.LeakyReLU(),
+            nn.Tanh(),
             nn.Linear(input_neurons, hidden_neurons),
-            nn.LeakyReLU(),
+            nn.Tanh(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.LeakyReLU(),
+            nn.Tanh(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.LeakyReLU(),
-            nn.Linear(hidden_neurons, hidden_neurons),
-            nn.LeakyReLU(),
-            nn.Linear(hidden_neurons, hidden_neurons),
-            nn.LeakyReLU(),
+            nn.ELU(),
             nn.Linear(hidden_neurons, output_neurons))
 
     def forward(self, x):
@@ -74,7 +70,9 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005, epochs=3000, loss_func=torch.nn.MSELoss()):
+def neural_network_trainer(x, y, d_range, hidden_neurons=16, learning_rate=0.001, epochs=500,
+                           loss_func=torch.nn.MSELoss(), label_plot_index = 0,
+                           x_label='Reduced temperature', y_label='Reduced pressure'):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
@@ -102,10 +100,10 @@ def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
             plt.figure(2)
             plt.clf()
-            plt.scatter(x[:, 1].data.numpy(), y[:, 0].data.numpy(), color='orange', s=1)
-            plt.scatter(x[:, 1].data.numpy(), y_pred[:, 0].data.numpy(), color='blue', s=1)
+            plt.scatter(x[:, label_plot_index].data.numpy(), y[:, 0].data.numpy(), color='orange', s=1)
+            plt.scatter(x[:, label_plot_index].data.numpy(), y_pred[:, 0].data.numpy(), color='blue', s=1)
             plt.text(0.5, 0, 'Loss=%.4f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
-            plt.xlabel('Reduced temperature'), plt.ylabel('Reduced pressure')
+            plt.xlabel(x_label), plt.ylabel(y_label)
             plt.pause(0.0001)
     return model
 
@@ -113,19 +111,19 @@ def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.005
 # takes the trained neural network with accompanying data and evaluates the model based on subset of data
 # can be used for testing and validation
 def neural_network_evaluator(features, labels, d_range, model, x_label='Temperature /K',
-                             y_label='Vapour pressure /Pa', test_label_index=0):
+                             y_label='Vapour pressure /Pa', label_plot_index=0):
     model.eval()
     X = matrix_to_tensor(features, d_range)
     Y = matrix_to_tensor(labels, d_range)
     y_correlation = model(X)
-    # R_sq, AAD = fit_evaluator(Y[test_label_index].data.numpy(), y_correlation[test_label_index].data.numpy())
+    # R_sq, AAD = fit_evaluator(Y[0].data.numpy(), y_correlation[0].data.numpy())
     R_sq, AAD = 1, 1  # TODO: Fix this
     loss_func = torch.nn.MSELoss()
     validation_loss = loss_func(y_correlation, Y).item()
     plt.figure(3)
     plt.title('Testing neural network fit: validation data points')
-    plt.scatter(X[:, 1].numpy(), Y[:,0].data.numpy(), color ='orange', s=1, label='Experimental data points')
-    plt.scatter(X[:, 1].numpy(), y_correlation[:,0].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
+    plt.scatter(X[:, label_plot_index].numpy(), Y[:,0].data.numpy(), color ='orange', s=1, label='Experimental data points')
+    plt.scatter(X[:, label_plot_index].numpy(), y_correlation[:,0].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
     plt.xlabel('Reduced boiling temperature'), plt.ylabel('Pressure /bar')
     plt.legend()
     plt.figure(4)
@@ -136,7 +134,6 @@ def neural_network_evaluator(features, labels, d_range, model, x_label='Temperat
     print(validation_loss)
     plt.text(0.5, 0, 'Loss=%.4f' % validation_loss, fontdict={'size': 10, 'color': 'red'})
     plt.xlabel('Actual values'), plt.ylabel('Predicted values')
-
 
 # def main():
 plt.close('all')
@@ -157,7 +154,7 @@ num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
 
 # setting features and labels
 reduced_temp = temp/temp_crit_saft
-features = [mol_weight, reduced_temp, num_C, num_F, num_CC, omega, F_on_central_C]
+features = [mol_weight, reduced_temp, num_C, num_F, num_CC, omega]
 reduced_pressure = pressure/pressure_crit_saft
 labels = [reduced_pressure]
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
@@ -167,12 +164,14 @@ plt.style.use('seaborn-darkgrid')
 plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
 plt.figure(1).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(2).patch.set_facecolor('xkcd:light periwinkle')
-trained_nn = neural_network_trainer(feature_matrix, label_matrix, ([i for j in (range(0, 1800), range(2100, 2300)) for i in j]), epochs=20000, learning_rate=0.001,
-                                    loss_func=torch.nn.MSELoss())  # training on all but 3 compounds
+
+trained_nn = neural_network_trainer(feature_matrix, label_matrix, ([i for j in (range(0, 1800), range(2100, 2300)) for i in j]),
+                                    epochs=20000, learning_rate=0.002, hidden_neurons=32,
+                                    loss_func=torch.nn.MSELoss(), label_plot_index=1)  # training on all but 3 compounds
 
 plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(4).patch.set_facecolor('xkcd:light periwinkle')
-neural_network_evaluator(features, labels, range(1800, 2100), trained_nn)  # evaluating based on 3 unseen compounds
+neural_network_evaluator(features, labels, range(1800, 2100), trained_nn, label_plot_index=1)  # evaluating based on 3 unseen compounds
 
 # also need to write additional code to validate model
 
