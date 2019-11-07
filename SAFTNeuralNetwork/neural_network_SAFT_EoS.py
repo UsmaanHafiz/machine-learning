@@ -3,7 +3,7 @@ import pandas as pd
 import torch
 from matplotlib import pyplot as plt
 from torch import nn
-from helperfunctions import *
+from SAFTNeuralNetwork.helperfunctions import *
 
 plt.close('all')
 
@@ -24,9 +24,10 @@ num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
 
 # setting features and labels
 reduced_temp = temp/temp_crit_saft
-features = [mol_weight, reduced_temp, num_C, num_F, num_CC, omega]
+features = [mol_weight, reduced_temp, num_C, num_F, omega]
 reduced_pressure = pressure/pressure_crit_saft
 labels = [reduced_pressure, spec_vol]
+
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
     nn_data_preparer(features, labels)
 
@@ -35,20 +36,26 @@ plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
 plt.figure(1).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(2).patch.set_facecolor('xkcd:light periwinkle')
 
-feature_to_plot, label_to_plot = 1, 1  # choosing which label and feature to show in plots
-feature_name, label_name = 'Reduced temperature', 'Specific volume'
-training_range = ([i for j in (range(0, 1800), range(2100, 2300)) for i in j])
-test_range = range(1800, 2100)
-trained_nn = neural_network_trainer(feature_matrix, label_matrix, training_range,
-                                    epochs=3000, learning_rate=0.0002, hidden_neurons=8,
+feature_to_plot, labels_to_plot = 1, [0, 1] # choosing which label and feature to show in plots
+feature_name, label_names = 'Reduced temperature', ['Reduced pressure', 'Specific volume']
+training_range = ([i for j in (range(0, 1800), range(2100, 2300)) for i in j])  # training on all but 3 compounds
+test_range = range(1800, 2100)                                                      # testing on those 3 compounds
+trained_nn, feature_scaling_parameters, label_scaling_parameters = neural_network_trainer(
+                                    feature_matrix, label_matrix, training_range, test_range,
+                                    epochs=250, learning_rate=0.002, hidden_neurons=32,
                                     loss_func=torch.nn.MSELoss(),
-                                    label_plot_index=label_to_plot, feature_plot_index=feature_to_plot,
-                                    x_label=feature_name, y_label=label_name)  # training on all but 3 compounds
+                                    label_plot_index=labels_to_plot[0], feature_plot_index=feature_to_plot,
+                                    x_label=feature_name, y_label=label_names[0], show_progress=True)
+
 plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(4).patch.set_facecolor('xkcd:light periwinkle')
-neural_network_evaluator(features, labels, test_range, trained_nn,
-                         label_plot_index=label_to_plot, feature_plot_index=feature_to_plot,
-                         x_label=feature_name, y_label=label_name)  # evaluating based on 3 unseen compounds
+plt.figure(5).patch.set_facecolor('xkcd:light periwinkle')
+plt.figure(6).patch.set_facecolor('xkcd:light periwinkle')
+
+neural_network_evaluator(feature_matrix, label_matrix, training_range, test_range, trained_nn,
+                         label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
+                         x_label=feature_name, y_label=label_names,
+                         x_scaling = feature_scaling_parameters, y_scaling = label_scaling_parameters)  # evaluating based on 3 unseen compounds
 
 # also need to write additional code to validate model
 

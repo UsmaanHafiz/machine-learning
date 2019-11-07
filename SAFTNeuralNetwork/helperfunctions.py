@@ -36,14 +36,32 @@ def matrix_to_tensor(array, data_range):
     return torch.tensor(frame.transpose().values).float()
 
 
-# prepares data for neural_network_trainer()
+def tensor_standardiser(tensor, data_range):  # standardises a tensor's values based on statistical parameters computed from data in data_range
+    x = tensor.data.numpy()
+    scaling_parameters=[]
+    for i in range(x.shape[1]):
+        scaling_mean, scaling_std = np.mean(x[data_range, i]), np.std(x[data_range, i])
+        scaling_parameters.append([scaling_mean, scaling_std])
+        x[:, i] = (x[:, i] - scaling_mean) / scaling_std
+    return matrix_to_tensor(x, range(0, len(x[0]))).t(), scaling_parameters
+
+
+def inverse_tensor_standardiser(tensor, scaling_parameters):
+    x = tensor.data.numpy()
+    for i in range(x.shape[1]):
+        scaling_mean, scaling_std = scaling_parameters[i]
+        x[:, i] = (x[:, i] * scaling_std) + scaling_mean
+    return matrix_to_tensor(x, range(0, len(x[0]))).t()
+
+
+# prepares data and ranges for neural_network_trainer()
 def nn_data_preparer(features, labels):
     sub_range_size = int(0.4 * len(labels[0]))
     training_range = random.sample(range(0, len(labels[0])), sub_range_size)
     test_range = random.sample(list(x for x in list(range(0, len(labels[0]))) if x not in training_range), sub_range_size)
     validation_range = list(z for z in list(range(0, len(labels[0]))) if z not in (training_range, test_range))
-    X = matrix_to_tensor(features, range(0,len(features[0])))
-    Y = matrix_to_tensor(labels, range(0,len(features[0])))
+    X = matrix_to_tensor(features, range(0, len(features[0])))
+    Y = matrix_to_tensor(labels, range(0, len(features[0])))
     return X, Y, training_range, test_range, validation_range
 
 
@@ -52,15 +70,13 @@ class NeuralNet(nn.Module):
     def __init__(self, input_neurons, output_neurons, hidden_neurons):
         super(NeuralNet, self).__init__()
         self.layer = nn.Sequential(
-            nn.Tanh(),
+            nn.ELU(),
             nn.Linear(input_neurons, hidden_neurons),
-            nn.Tanh(),
+            nn.ELU(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.Tanh(),
+            nn.ELU(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.Tanh(),
-            nn.Linear(hidden_neurons, hidden_neurons),
-            nn.Tanh(),
+            nn.ELU(),
             nn.Linear(hidden_neurons, output_neurons))
 
     def forward(self, x):
@@ -69,68 +85,79 @@ class NeuralNet(nn.Module):
 
 
 # trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
-def neural_network_trainer(x, y, d_range, hidden_neurons=32, learning_rate=0.001, epochs=500,
+def neural_network_trainer(x, y, training_range, test_range, hidden_neurons=32, learning_rate=0.001, epochs=500,
                            loss_func=torch.nn.MSELoss(), feature_plot_index=0,  label_plot_index = 0,
-                           x_label='Reduced temperature', y_label='Reduced pressure'):
+                           x_label='Reduced temperature', y_label='Reduced pressure', show_progress=False):
     # setting model parameters
     input_neurons = x.shape[1]
     output_neurons = y.shape[1]
-    x = x[d_range]
-    y = y[d_range]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
     model.train()
     print(model)
-
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
-    # x = Variable(x)
-    # y = Variable(y)
+    # print(x[training_range].shape)
+    # print(y[training_range].shape)
+    x, feature_scaling_parameters = tensor_standardiser(x, training_range)
+    y, label_scaling_parameters = tensor_standardiser(y, training_range)
     for epoch in range(epochs):
-        y_pred = model(x)  # forward pass
-        loss = loss_func(y_pred, y)  # computing loss
+        y_pred = model(x[training_range])  # forward pass
+        loss = loss_func(y_pred, y[training_range])  # computing loss
         loss.backward()  # backward pass
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
         # print('epoch: {}; loss: {}'.format(epoch, loss.item()))
         plt.figure(1)
-        plt.ylim(0, 3*loss.item()), plt.xlim(0, epoch)
+        if epoch > 1 and loss.item() is float:
+            plt.ylim(0, 3*loss.item()), plt.xlim(0, epoch)
         plt.scatter(epoch, loss.item(), s=1)
         plt.xlabel('Epoch'), plt.ylabel('Loss')
-        if epoch % 100 == 0:  # plotting and showing learning process
+        if epoch % 100 == 0 and show_progress is True:  # plotting and showing learning process
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
             plt.figure(2)
             plt.clf()
-            plt.scatter(x[:, feature_plot_index].data.numpy(), y[:, label_plot_index].data.numpy(), color='orange', s=1)
-            plt.scatter(x[:, feature_plot_index].data.numpy(), y_pred[:, label_plot_index].data.numpy(), color='blue',
-                        s=1)
+            plt.scatter(x[training_range, feature_plot_index].data.numpy(), y[training_range, label_plot_index].data.numpy(), color='orange', s=1)
+            plt.scatter(x[training_range, feature_plot_index].data.numpy(), y_pred[:, label_plot_index].data.numpy(), color='blue', s=1)
             plt.text(0.5, 0, 'Loss=%f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
             plt.xlabel(x_label), plt.ylabel(y_label)
             plt.pause(0.0001)
-    return model
+    return model, feature_scaling_parameters, label_scaling_parameters
 
 
 # takes the trained neural network with accompanying data and evaluates the model based on subset of data
 # can be used for testing and validation
-def neural_network_evaluator(features, labels, d_range, model, x_label='Temperature /K',
-                             y_label='Vapour pressure /Pa', feature_plot_index=0, label_plot_index=0):
+def neural_network_evaluator(x, y, training_range, test_range, model, x_label='Temperature /K',
+                             y_label='Vapour pressure /Pa', feature_plot_index=0, label_plot_index=0,
+                             x_scaling = None, y_scaling = None):
     model.eval()
-    X = matrix_to_tensor(features, d_range)
-    Y = matrix_to_tensor(labels, d_range)
-    y_correlation = model(X)
-    # R_sq, AAD = fit_evaluator(Y[0].data.numpy(), y_correlation[0].data.numpy())
+    model_input, unn = tensor_standardiser(x, training_range)
+    y_correlation_stand = model(model_input)
+    y_correlation = inverse_tensor_standardiser(y_correlation_stand, y_scaling)
+    y_stand, unnn = tensor_standardiser(y, training_range)
+    x_train, x_test = x[training_range], x[test_range]
+    y_train, y_test = y[training_range], y[test_range]
+    y_correlation_train, y_correlation_test = y_correlation[training_range], y_correlation[test_range]
+
     R_sq, AAD = 1, 1  # TODO: Fix this
     loss_func = torch.nn.MSELoss()
-    validation_loss = loss_func(y_correlation, Y).item()
-    plt.figure(3)
-    plt.title('Testing neural network fit: model applied to test range data')
-    plt.scatter(X[:, feature_plot_index].numpy(), Y[: ,label_plot_index].data.numpy(), color ='orange', s=1, label='Experimental data points')
-    plt.scatter(X[:, feature_plot_index].numpy(), y_correlation[: ,label_plot_index].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
-    plt.xlabel(x_label), plt.ylabel(y_label)
-    plt.legend()
-    plt.figure(4)
-    plt.title('Testing neural network fit using test range data: predicted against actual values for chosen label')
-    plt.scatter(Y[:, label_plot_index].data.numpy(), y_correlation[:, label_plot_index].data.numpy(), s=1)
-    plt.plot(np.linspace(0, 1, 5), np.linspace(0, 1, 5))
-    plt.ylim((0, 1)), plt.xlim(0, 1)
-    print(validation_loss)
-    plt.text(0.5, 0, 'Loss=%f' % validation_loss, fontdict={'size': 10, 'color': 'red'})
-    plt.xlabel('Actual values'), plt.ylabel('Predicted values')
+
+    train_loss = loss_func(y_correlation_stand[training_range], y_stand[training_range]).item()
+    test_loss = loss_func(y_correlation_stand[test_range], y_stand[test_range]).item()
+
+    for i in label_plot_index:
+        plt.figure(3+i*2)
+        plt.title('Testing neural network fit: model applied to test range data')
+        print(x_test.shape)
+        print(y_test.shape)
+        plt.scatter(x_test[:, feature_plot_index].numpy(), y_test[:, i].data.numpy(), color='orange', s=1, label='Experimental data points')
+        plt.scatter(x_test[:, feature_plot_index].numpy(), y_correlation_test[:, i].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
+        plt.xlabel(x_label), plt.ylabel(y_label[i])
+        plt.legend()
+
+        plt.figure(4+i*2)
+        plt.title('Testing neural network fit using test range data: predicted against actual values for label %s' % y_label[i])
+        plt.scatter(y_test[:, label_plot_index].data.numpy(), y_correlation_test[:, label_plot_index].data.numpy(), s=1)
+        plt.xlim(0, max(plt.xlim()[1], plt.ylim()[1])), plt.ylim(0, max(plt.xlim()[1], plt.ylim()[1]))
+        plt.plot(np.linspace(0, plt.xlim()[1], 5), np.linspace(0, plt.xlim()[1], 5))
+        plt.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
+        plt.xlabel('Actual values'), plt.ylabel('Predicted values')
+

@@ -7,6 +7,9 @@ from matplotlib import pyplot as plt
 from torch import nn
 from helperfunctions import *
 
+from SAFTNeuralNetwork.helperfunctions import data_extractor, nn_data_preparer, neural_network_evaluator, \
+    neural_network_trainer
+
 plt.close('all')
 (data_headers, data_values) = data_extractor(filename='Excel-data.xlsx')
 names = data_values[np.where(data_headers == 'name')[0][0]]
