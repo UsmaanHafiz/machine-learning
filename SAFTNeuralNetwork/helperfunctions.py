@@ -111,20 +111,17 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
 # takes the trained neural network with accompanying data and evaluates the model based on subset of data
 # can be used for testing and validation
 # takes SCALED x and y and scaling parameters used
-def neural_network_evaluator(x, y, training_range, test_range, model, x_label='Temperature /K',
+def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_range, model, x_label='Temperature /K',
                              y_label='Vapour pressure /Pa', feature_plot_index=0, label_plot_index=[0],
                              x_scaling_parameters=None, y_scaling_parameters=None):
-    model.eval()
-    y_model = model(x)
+    # model.eval()
+    y_model = model(x_scaled)
     y_model_original = inverse_tensor_standardiser(y_model, y_scaling_parameters)
-    x_original = inverse_tensor_standardiser(x, x_scaling_parameters)
-    y_original = inverse_tensor_standardiser(y, y_scaling_parameters)
-
     R_sq, AAD = 1, 1  # TODO: Fix this
     loss_func = torch.nn.MSELoss()
 
-    train_loss = loss_func(y_model[training_range], y[training_range]).item()
-    test_loss = loss_func(y_model[test_range], y[test_range]).item()
+    train_loss = loss_func(y_model[training_range], y_scaled[training_range]).item()
+    test_loss = loss_func(y_model[test_range], y_scaled[test_range]).item()
 
     print('Training loss is', train_loss)
     print('Test loss is', test_loss)
@@ -132,14 +129,14 @@ def neural_network_evaluator(x, y, training_range, test_range, model, x_label='T
     for i in label_plot_index:
         plt.figure(4+i*2)
         plt.title('Testing neural network fit: model applied to test range data')
-        plt.scatter(x_original[test_range, feature_plot_index].numpy(), y_original[test_range, i].data.numpy(), color='orange', s=1, label='Experimental data points')
-        plt.scatter(x_original[test_range, feature_plot_index].numpy(), y_model_original[test_range, i].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
+        plt.scatter(x[test_range, feature_plot_index].numpy(), y[test_range, i].data.numpy(), color='orange', s=1, label='Experimental data points')
+        plt.scatter(x[test_range, feature_plot_index].numpy(), y_model_original[test_range, i].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
         plt.xlabel(x_label), plt.ylabel(y_label[i])
         plt.legend()
 
         plt.figure(5+i*2)
         plt.title('Testing neural network fit using test range data: predicted against actual values for label %s' % y_label[i])
-        plt.scatter(y_original[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
+        plt.scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
         plt.xlim(0, max(plt.xlim()[1], plt.ylim()[1])), plt.ylim(0, max(plt.xlim()[1], plt.ylim()[1]))
         plt.plot(np.linspace(0, plt.xlim()[1], 5), np.linspace(0, plt.xlim()[1], 5))
         plt.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})

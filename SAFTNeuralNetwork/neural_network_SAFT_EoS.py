@@ -55,10 +55,12 @@ plt.figure(4).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(5).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(6).patch.set_facecolor('xkcd:light periwinkle')
 
-neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix, training_range, test_range, trained_nn,
+scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix, training_range)
+scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
+
+neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix, feature_matrix, label_matrix, training_range, test_range, trained_nn,
                          label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
-                         x_label=feature_name, y_label=label_names,
-                         x_scaling_parameters=feature_scaling_parameters, y_scaling_parameters=label_scaling_parameters)
+                         x_label=feature_name, y_label=label_names, y_scaling_parameters=label_scaling_parameters)
 
 
 # also need to write additional code to validate model
