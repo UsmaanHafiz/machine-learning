@@ -7,11 +7,11 @@ class NeuralNet(nn.Module):
         self.layer = nn.Sequential(
             nn.ELU(),
             nn.Linear(input_neurons, hidden_neurons),
-            nn.ELU(),
+            nn.Tanh(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.ELU(),
+            nn.Tanh(),
             nn.Linear(hidden_neurons, hidden_neurons),
-            nn.ELU(),
+            nn.Tanh(),
             nn.Linear(hidden_neurons, output_neurons))
 
     def forward(self, x):

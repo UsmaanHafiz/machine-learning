@@ -2,7 +2,9 @@ import random
 import numpy as np
 import pandas as pd
 import torch
+import time
 from matplotlib import pyplot as plt
+import matplotlib.animation as animation
 from torch import nn
 from SAFTNeuralNetwork.NeuralNet import NeuralNet
 
@@ -81,7 +83,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
     x = features[training_range]
     y = labels[training_range]
-
+    loss_plot =
     for epoch in range(epochs):
         y_pred = model(x)  # forward pass
         loss = loss_func(y_pred, y)  # computing loss
@@ -89,6 +91,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
         # print('epoch: {}; loss: {}'.format(epoch, loss.item()))
+        plt.ion()
         plt.figure(1)
         if epoch > 1:
             plt.ylim(0, 3*loss.item()), plt.xlim(0, epoch)
@@ -104,7 +107,8 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
                 plt.scatter(x[:, feature_plot_index].data.numpy(), y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
                 plt.text(0.5, 0, 'Loss=%f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
                 plt.xlabel(x_label), plt.ylabel(y_label[i])
-                plt.pause(0.0001)
+                plt.pause(0.001)
+
     return model
 
 
