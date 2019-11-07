@@ -40,22 +40,25 @@ feature_to_plot, labels_to_plot = 1, [0, 1] # choosing which label and feature t
 feature_name, label_names = 'Reduced temperature', ['Reduced pressure', 'Specific volume']
 training_range = ([i for j in (range(0, 1800), range(2100, 2300)) for i in j])  # training on all but 3 compounds
 test_range = range(1800, 2100)                                                      # testing on those 3 compounds
-trained_nn, feature_scaling_parameters, label_scaling_parameters = neural_network_trainer(
-                                    feature_matrix, label_matrix, training_range, test_range,
-                                    epochs=250, learning_rate=0.002, hidden_neurons=32,
+
+scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix, training_range)
+scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
+
+trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
+                                    epochs=1000, learning_rate=0.0015, hidden_neurons=16,
                                     loss_func=torch.nn.MSELoss(),
-                                    label_plot_index=labels_to_plot[0], feature_plot_index=feature_to_plot,
-                                    x_label=feature_name, y_label=label_names[0], show_progress=True)
+                                    label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
+                                    x_label=feature_name, y_label=label_names, show_progress=True)
 
 plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(4).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(5).patch.set_facecolor('xkcd:light periwinkle')
 plt.figure(6).patch.set_facecolor('xkcd:light periwinkle')
 
-neural_network_evaluator(feature_matrix, label_matrix, training_range, test_range, trained_nn,
+neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix, training_range, test_range, trained_nn,
                          label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                          x_label=feature_name, y_label=label_names,
-                         x_scaling = feature_scaling_parameters, y_scaling = label_scaling_parameters)  # evaluating based on 3 unseen compounds
+                         x_scaling_parameters=feature_scaling_parameters, y_scaling_parameters=label_scaling_parameters)
+
 
 # also need to write additional code to validate model
-
