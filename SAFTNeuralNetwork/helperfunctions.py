@@ -83,32 +83,38 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
     x = features[training_range]
     y = labels[training_range]
-    loss_plot =
+
+    loss_fig = plt.figure()
+    label_fig = plt.figure()
+    loss_plot = loss_fig.add_subplot(1, 1, 1)
+    loss_plot.set_xlabel('Epoch'), loss_plot.set_ylabel('Loss')
+    label_plot = []
+    for i in label_plot_index:
+        label_plot.append(label_fig.add_subplot(1, 2, i+1))
+
     for epoch in range(epochs):
         y_pred = model(x)  # forward pass
         loss = loss_func(y_pred, y)  # computing loss
         loss.backward()  # backward pass
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
-        # print('epoch: {}; loss: {}'.format(epoch, loss.item()))
-        plt.ion()
-        plt.figure(1)
         if epoch > 1:
-            plt.ylim(0, 3*loss.item()), plt.xlim(0, epoch)
-        plt.scatter(epoch, loss.item(), s=1)
-        plt.xlabel('Epoch'), plt.ylabel('Loss')
-
+            loss_plot.set(ylim=(0, 3*loss.item()), xlim=(0, epoch))
+        loss_plot.scatter(epoch, loss.item(), s=1)
+        if epoch == 0:
+            loss_fig.show()
+            label_fig.show()
         if epoch % 100 == 0 and show_progress is True:  # plotting and showing learning process
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
+            label_fig.cla()
+            label_fig.text(0.5, 0, 'Loss=%f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
             for i in label_plot_index:
-                plt.figure(2+i)
-                plt.clf()
-                plt.scatter(x[:, feature_plot_index].data.numpy(), y[:, label_plot_index[i]].data.numpy(), color='orange', s=1)
-                plt.scatter(x[:, feature_plot_index].data.numpy(), y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
-                plt.text(0.5, 0, 'Loss=%f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
-                plt.xlabel(x_label), plt.ylabel(y_label[i])
-                plt.pause(0.001)
-
+                label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])
+                label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
+                                      y[:, label_plot_index[i]].data.numpy(), color='orange', s=1)
+                label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
+                                      y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
+            label_fig.canvas.start_event_loop(0.001)
     return model
 
 
@@ -130,19 +136,27 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
     print('Training loss is', train_loss)
     print('Test loss is', test_loss)
 
+    model_fig = plt.figure()
+    comparison_fig = plt.figure()
+    model_plot = []
+    comparison_plot = []
+    model_fig.suptitle('Testing neural network fit: model applied to test range data')
+    comparison_fig.suptitle('Testing neural network fit using test range data: predicted against actual values')
+    comparison_fig.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
+    model_fig.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
+
     for i in label_plot_index:
-        plt.figure(4+i*2)
-        plt.title('Testing neural network fit: model applied to test range data')
-        plt.scatter(x[test_range, feature_plot_index].numpy(), y[test_range, i].data.numpy(), color='orange', s=1, label='Experimental data points')
-        plt.scatter(x[test_range, feature_plot_index].numpy(), y_model_original[test_range, i].data.numpy(), color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
-        plt.xlabel(x_label), plt.ylabel(y_label[i])
+        model_plot.append(model_fig.add_subplot(1, 2, i + 1))
+        comparison_plot.append(comparison_fig.add_subplot(1, 2, i + 1))
+        model_plot[i].set_xlabel(x_label), model_plot[i].set_ylabel(y_label[i])
+        comparison_plot[i].set_xlabel('Actual values'), comparison_plot[i].set_ylabel('Predicted values')
+
+        model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y[test_range, i].data.numpy(),
+                              color='orange', s=1, label='Experimental data points')
+        model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y_model_original[test_range, i].data.numpy(),
+                              color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
         plt.legend()
-
-        plt.figure(5+i*2)
-        plt.title('Testing neural network fit using test range data: predicted against actual values for label %s' % y_label[i])
-        plt.scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
-        plt.xlim(0, max(plt.xlim()[1], plt.ylim()[1])), plt.ylim(0, max(plt.xlim()[1], plt.ylim()[1]))
-        plt.plot(np.linspace(0, plt.xlim()[1], 5), np.linspace(0, plt.xlim()[1], 5))
-        plt.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
-        plt.xlabel('Actual values'), plt.ylabel('Predicted values')
-
+        comparison_plot[i].scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
+        comparison_plot[i].xlim(0, max(comparison_plot[i].xlim()[1], comparison_plot[i].ylim()[1]))
+        comparison_plot[i].ylim(0, max(comparison_plot[i].xlim()[1], comparison_plot[i].ylim()[1]))
+        comparison_plot[i].plot(np.linspace(0, comparison_plot[i].xlim()[1], 5), np.linspace(0, comparison_plot[i].xlim()[1], 5))

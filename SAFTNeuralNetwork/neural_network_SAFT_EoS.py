@@ -33,8 +33,7 @@ feature_matrix, label_matrix, training_range, test_range, validation_range = \
 
 plt.style.use('seaborn-darkgrid')
 plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
-plt.figure(1).patch.set_facecolor('xkcd:light periwinkle')
-plt.figure(2).patch.set_facecolor('xkcd:light periwinkle')
+plt.rcParams['figure.facecolor'] = 'xkcd:light periwinkle'
 
 feature_to_plot, labels_to_plot = 1, [0, 1] # choosing which label and feature to show in plots
 feature_name, label_names = 'Reduced temperature', ['Reduced pressure', 'Specific volume']
@@ -45,15 +44,11 @@ scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_
 scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=20000, learning_rate=0.004, hidden_neurons=32,
+                                    epochs=30000, learning_rate=0.003, hidden_neurons=16,
                                     loss_func=torch.nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
 
-plt.figure(3).patch.set_facecolor('xkcd:light periwinkle')
-plt.figure(4).patch.set_facecolor('xkcd:light periwinkle')
-plt.figure(5).patch.set_facecolor('xkcd:light periwinkle')
-plt.figure(6).patch.set_facecolor('xkcd:light periwinkle')
 
 scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix, training_range)
 scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)

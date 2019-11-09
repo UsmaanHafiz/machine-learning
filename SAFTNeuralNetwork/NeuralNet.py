@@ -8,11 +8,11 @@ class NeuralNet(nn.Module):
             nn.ELU(),
             nn.Linear(input_neurons, hidden_neurons),
             nn.Tanh(),
-            nn.Linear(hidden_neurons, hidden_neurons),
+            nn.Linear(hidden_neurons, hidden_neurons/2),
             nn.Tanh(),
-            nn.Linear(hidden_neurons, hidden_neurons),
+            nn.Linear(hidden_neurons/2, hidden_neurons/4),
             nn.Tanh(),
-            nn.Linear(hidden_neurons, output_neurons))
+            nn.Linear(hidden_neurons/4, output_neurons))
 
     def forward(self, x):
         x = self.layer(x)
