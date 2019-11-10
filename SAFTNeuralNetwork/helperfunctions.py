@@ -185,12 +185,12 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
         comparison_plot.append(comparison_fig.add_subplot(1, 2, i + 1))
         model_plot[i].set_xlabel(x_label), model_plot[i].set_ylabel(y_label[i])
         comparison_plot[i].set_xlabel('Actual values'), comparison_plot[i].set_ylabel('Predicted values')
-
+        comparison_plot[i].set_title(y_label[i])
         model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y[test_range, i].data.numpy(),
                               color='orange', s=1, label='Experimental data points')
         model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y_model_original[test_range, i].data.numpy(),
                               color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
-        plt.legend()
+        model_plot[i].legend()
         comparison_plot[i].scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
         lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
         comparison_plot[i].set(xlim=(0, lim), ylim=(0,lim))
