@@ -2,11 +2,43 @@ import random
 import numpy as np
 import pandas as pd
 import torch
-import time
-from matplotlib import pyplot as plt
-import matplotlib.animation as animation
 from torch import nn
 from SAFTNeuralNetwork.NeuralNet import NeuralNet
+import matplotlib
+matplotlib.use('TkAgg')
+from matplotlib import pyplot as plt
+
+
+def move_figure(position="top-right"):  # Positions figures nicely
+    '''
+    Possible positions are:
+    top, bottom, left, right, top-left, top-right, bottom-left, bottom-right
+    '''
+    pass
+    # mgr = plt.get_current_fig_manager()
+    # mgr.full_screen_toggle()  # primitive but works to get screen size
+    # py = mgr.canvas.height()
+    # px = mgr.canvas.width()
+    #
+    # d = 10  # width of the window border in pixels
+    # if position == "top":
+    #     # x-top-left-corner, y-top-left-corner, x-width, y-width (in pixels)
+    #     mgr.window.setGeometry(d, 4*d, px - 2*d, py/2 - 4*d)
+    # elif position == "bottom":
+    #     mgr.window.setGeometry(d, py/2 + 5*d, px - 2*d, py/2 - 4*d)
+    # elif position == "left":
+    #     mgr.window.setGeometry(d, 4*d, px/2 - 2*d, py - 4*d)
+    # elif position == "right":
+    #     mgr.window.setGeometry(px/2 + d, 4*d, px/2 - 2*d, py - 4*d)
+    # elif position == "top-left":
+    #     mgr.window.setGeometry(d, 4*d, px/2 - 2*d, py/2 - 4*d)
+    # elif position == "top-right":
+    #     mgr.window.setGeometry(px/2 + d, 4*d, px/2 - 2*d, py/2 - 4*d)
+    # elif position == "bottom-left":
+    #     mgr.window.setGeometry(d, py/2 + 5*d, px/2 - 2*d, py/2 - 4*d)
+    # elif position == "bottom-right":
+    #     mgr.window.setGeometry(px/2 + d, py/2 + 5*d, px/2 - 2*d, py/2 - 4*d)
+
 
 # extracts data from an excel file
 def data_extractor(column_values=None, filename='refrigerant_data.xlsx'):
@@ -85,7 +117,9 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
     y = labels[training_range]
 
     loss_fig = plt.figure()
+    move_figure(position="left")
     label_fig = plt.figure()
+    move_figure(position="right")
     loss_plot = loss_fig.add_subplot(1, 1, 1)
     loss_plot.set_xlabel('Epoch'), loss_plot.set_ylabel('Loss')
     label_plot = []
@@ -106,15 +140,16 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
             label_fig.show()
         if epoch % 100 == 0 and show_progress is True:  # plotting and showing learning process
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
-            label_fig.cla()
-            label_fig.text(0.5, 0, 'Loss=%f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
+            # label_fig.text(0.5, 0, 'Loss=%f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
             for i in label_plot_index:
+                label_plot[i].cla()
                 label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])
                 label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
                                       y[:, label_plot_index[i]].data.numpy(), color='orange', s=1)
                 label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
                                       y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
             label_fig.canvas.start_event_loop(0.001)
+
     return model
 
 
@@ -157,6 +192,6 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
                               color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
         plt.legend()
         comparison_plot[i].scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
-        comparison_plot[i].xlim(0, max(comparison_plot[i].xlim()[1], comparison_plot[i].ylim()[1]))
-        comparison_plot[i].ylim(0, max(comparison_plot[i].xlim()[1], comparison_plot[i].ylim()[1]))
-        comparison_plot[i].plot(np.linspace(0, comparison_plot[i].xlim()[1], 5), np.linspace(0, comparison_plot[i].xlim()[1], 5))
+        lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
+        comparison_plot[i].set(xlim=(0, lim), ylim=(0,lim))
+        comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))

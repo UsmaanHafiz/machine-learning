@@ -1,10 +1,5 @@
-import numpy as np
-import pandas as pd
-import torch
-from torch import nn
 from SAFTNeuralNetwork.helperfunctions import *
-from matplotlib import pyplot as plt
-import matplotlib
+
 plt.close('all')
 
 (data_headers, data_values) = data_extractor(filename='data_storage.xlsx')
@@ -44,7 +39,7 @@ scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_
 scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=30000, learning_rate=0.003, hidden_neurons=16,
+                                    epochs=300, learning_rate=0.006, hidden_neurons=8,
                                     loss_func=torch.nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
