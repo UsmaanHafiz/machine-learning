@@ -84,7 +84,7 @@ def nn_data_preparer(features, labels):
 
 # standardises a tensor's values based on statistical parameters computed from tensor data in data_range
 def tensor_standardiser(tensor, data_range):
-    x = tensor.data.numpy()
+    x = tensor.clone().data.numpy()
     scaling_parameters=[]
     for i in range(x.shape[1]):
         scaling_mean, scaling_std = np.mean(x[data_range, i]), np.std(x[data_range, i])
@@ -94,7 +94,7 @@ def tensor_standardiser(tensor, data_range):
 
 
 def inverse_tensor_standardiser(tensor, scaling_parameters):
-    x = tensor.data.numpy()
+    x = tensor.clone().data.numpy()
     for i in range(x.shape[1]):
         scaling_mean, scaling_std = scaling_parameters[i]
         x[:, i] = (x[:, i] * scaling_std) + scaling_mean
@@ -149,7 +149,6 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
                 label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
                                       y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
             label_fig.canvas.start_event_loop(0.001)
-
     return model
 
 
@@ -161,15 +160,19 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
                              x_scaling_parameters=None, y_scaling_parameters=None):
     # model.eval()
     y_model = model(x_scaled)
+
     y_model_original = inverse_tensor_standardiser(y_model, y_scaling_parameters)
     R_sq, AAD = 1, 1  # TODO: Fix this
     loss_func = torch.nn.MSELoss()
 
-    train_loss = loss_func(y_model[training_range], y_scaled[training_range]).item()
-    test_loss = loss_func(y_model[test_range], y_scaled[test_range]).item()
+    train_loss_scaled = loss_func(y_model[training_range], y_scaled[training_range]).item()
+    test_loss_scaled = loss_func(y_model[test_range], y_scaled[test_range]).item()
+    train_loss = loss_func(y_model_original[training_range], y[training_range]).item()
+    test_loss = loss_func(y_model_original[test_range], y[test_range]).item()
 
-    print('Training loss is', train_loss)
-    print('Test loss is', test_loss)
+    print('Training loss: ', train_loss_scaled, 'scaled', train_loss, 'true')
+    print('Test loss:',  test_loss_scaled, 'scaled', test_loss, 'true')
+
 
     model_fig = plt.figure()
     comparison_fig = plt.figure()
@@ -193,5 +196,5 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
         model_plot[i].legend()
         comparison_plot[i].scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
         lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
-        comparison_plot[i].set(xlim=(0, lim), ylim=(0,lim))
+        comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
         comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))

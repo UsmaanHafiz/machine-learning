@@ -1,5 +1,7 @@
 from SAFTNeuralNetwork.helperfunctions import *
-
+plt.style.use('seaborn-darkgrid')
+plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
+plt.rcParams['figure.facecolor'] = 'xkcd:light periwinkle'
 plt.close('all')
 
 (data_headers, data_values) = data_extractor(filename='data_storage.xlsx')
@@ -25,12 +27,11 @@ labels = [reduced_pressure, spec_vol]
 
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
     nn_data_preparer(features, labels)
+# feature_matrix_clone = feature_matrix.clone()  # creating copy for use in later evaluation
+# label_matrix_clone = label_matrix.clone()  # ditto
 
-plt.style.use('seaborn-darkgrid')
-plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
-plt.rcParams['figure.facecolor'] = 'xkcd:light periwinkle'
 
-feature_to_plot, labels_to_plot = 1, [0, 1] # choosing which label and feature to show in plots
+feature_to_plot, labels_to_plot = 1, [0, 1]  # choosing which feature and labels to show in plots
 feature_name, label_names = 'Reduced temperature', ['Reduced pressure', 'Specific volume']
 training_range = ([i for j in (range(0, 1800), range(2100, 2300)) for i in j])  # training on all but 3 compounds
 test_range = range(1800, 2100)                                                      # testing on those 3 compounds
@@ -39,14 +40,11 @@ scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_
 scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=5000, learning_rate=0.005, hidden_neurons=16,
+                                    epochs=5000, learning_rate=0.003, hidden_neurons=8,
                                     loss_func=torch.nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
 
-
-scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix, training_range)
-scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
 
 neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix, feature_matrix, label_matrix, training_range, test_range, trained_nn,
                          label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
