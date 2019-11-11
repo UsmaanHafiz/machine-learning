@@ -46,7 +46,7 @@ trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, 
                                     x_label=feature_name, y_label=label_names, show_progress=True)
 
 
-neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix, feature_matrix, label_matrix, training_range, test_range, trained_nn,
+test_loss, train_loss = neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix, feature_matrix, label_matrix, training_range, test_range, trained_nn,
                          label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                          x_label=feature_name, y_label=label_names, y_scaling_parameters=label_scaling_parameters)
 

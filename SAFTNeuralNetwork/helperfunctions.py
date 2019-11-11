@@ -105,7 +105,7 @@ def inverse_tensor_standardiser(tensor, scaling_parameters):
 # takes SCALED features and labels
 def neural_network_trainer(features, labels, training_range, test_range, hidden_neurons=32, learning_rate=0.001, epochs=500,
                            loss_func=torch.nn.MSELoss(), feature_plot_index=0,  label_plot_index=[0],
-                           x_label='Reduced temperature', y_label=['Reduced pressure'], show_progress=False):
+                           x_label='Reduced temperature', y_label=['Reduced pressure'], show_progress=True):
     # setting model parameters
     input_neurons = features.shape[1]
     output_neurons = labels.shape[1]
@@ -115,16 +115,16 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
     x = features[training_range]
     y = labels[training_range]
-
-    loss_fig = plt.figure()
-    move_figure(position="left")
-    label_fig = plt.figure()
-    move_figure(position="right")
-    loss_plot = loss_fig.add_subplot(1, 1, 1)
-    loss_plot.set_xlabel('Epoch'), loss_plot.set_ylabel('Loss')
-    label_plot = []
-    for i in label_plot_index:
-        label_plot.append(label_fig.add_subplot(1, 2, i+1))
+    if show_progress:
+        loss_fig = plt.figure()
+        move_figure(position="left")
+        label_fig = plt.figure()
+        move_figure(position="right")
+        loss_plot = loss_fig.add_subplot(1, 1, 1)
+        loss_plot.set_xlabel('Epoch'), loss_plot.set_ylabel('Loss')
+        label_plot = []
+        for i in range(len(label_plot_index)):
+            label_plot.append(label_fig.add_subplot(1, 2, i+1))
 
     for epoch in range(epochs):
         y_pred = model(x)  # forward pass
@@ -132,16 +132,16 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
         loss.backward()  # backward pass
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
-        if epoch > 1:
+        if epoch > 1 and show_progress is True:
             loss_plot.set(ylim=(0, 3*loss.item()), xlim=(0, epoch))
         loss_plot.scatter(epoch, loss.item(), s=1)
-        if epoch == 0:
+        if epoch == 0 and show_progress is True:
             loss_fig.show()
             label_fig.show()
         if epoch % 100 == 0 and show_progress is True:  # plotting and showing learning process
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
             # label_fig.text(0.5, 0, 'Loss=%f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
-            for i in label_plot_index:
+            for i in range(len(label_plot_index)):
                 label_plot[i].cla()
                 label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])
                 label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
@@ -198,3 +198,4 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
         lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
         comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
         comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
+    return test_loss, train_loss
