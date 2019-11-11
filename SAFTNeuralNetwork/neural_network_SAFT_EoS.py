@@ -37,15 +37,15 @@ scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_
 scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=1000, learning_rate=0.001, hidden_neurons=16,
+                                    epochs=750, learning_rate=0.001, hidden_neurons=16,
                                     loss_func=torch.nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
 
 test_loss, train_loss = neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
-                                                 feature_matrix, label_matrix, training_range, test_range, trained_nn,
-                                                 label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
-                                                 x_label=feature_name, y_label=label_names,
-                                                 y_scaling_parameters=label_scaling_parameters)
+                                                  feature_matrix, label_matrix, training_range, test_range, trained_nn,
+                                                  label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
+                                                  x_label=feature_name, y_label=label_names,
+                                                  y_scaling_parameters=label_scaling_parameters)[0:2]
 
 # also need to write additional code to validate model

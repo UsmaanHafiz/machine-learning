@@ -52,15 +52,15 @@ def data_extractor(column_values=None, filename='refrigerant_data.xlsx'):
 
 # given a set of experimental label data and predicted label data, returns R^2 and AAD
 def fit_evaluator(label, label_correlation):
-    # print(label.shape)
-    # print(label_correlation.shape)
-    SS_residual = np.sum(np.square((label - label_correlation)))
-    # print('ss residual is    {}'.format(SS_residual))
-    SS_total = (len(label) - 1) * np.var(label,ddof=1)
-    # print(len(label)), print(np.var(label,ddof=1))
+    y1 = label.clone().data.numpy()
+    y2 = label_correlation.clone().data.numpy()
+    print(y1.shape)
+    print(y2.shape)
+    SS_residual = np.sum(np.square((y1 - y2)))
+    SS_total = (len(y1) - 1) * np.var(y1, ddof=1)
     R_squared = 1 - (SS_residual / SS_total)
-    AAD = 100 * ((1 / len(label)) * np.sum(abs(label - label_correlation) / label))
-    return np.round(R_squared, decimals=2), np.round(AAD, decimals=2)
+    AAD = 100 * ((1 / len(y1)) * np.sum(abs(y2 - y1) / y1))
+    return np.round(R_squared, decimals=4), np.round(AAD, decimals=4)
 
 
 def matrix_to_tensor(array, data_range):
@@ -160,19 +160,25 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
                              x_scaling_parameters=None, y_scaling_parameters=None):
     # model.eval()
     y_model = model(x_scaled)
-
-    y_model_original = inverse_tensor_standardiser(y_model, y_scaling_parameters)
-    R_sq, AAD = 1, 1  # TODO: Fix this
+    if y_scaling_parameters is not None:
+        y_model_original = inverse_tensor_standardiser(y_model, y_scaling_parameters)
+    else:
+        y_model_original = y_model
     loss_func = torch.nn.MSELoss()
-
     train_loss_scaled = loss_func(y_model[training_range], y_scaled[training_range]).item()
     test_loss_scaled = loss_func(y_model[test_range], y_scaled[test_range]).item()
     train_loss = loss_func(y_model_original[training_range], y[training_range]).item()
     test_loss = loss_func(y_model_original[test_range], y[test_range]).item()
+    train_R_sq, train_AAD, test_R_sq, test_AAD = 1, 1, 1, 1
 
-    print('Training loss: ', train_loss_scaled, 'scaled', train_loss, 'true')
-    print('Test loss:',  test_loss_scaled, 'scaled', test_loss, 'true')
-
+    train_R_sq, train_AAD = fit_evaluator(y[training_range], y_model_original[training_range])
+    test_R_sq, test_AAD = fit_evaluator(y[test_range], y_model_original[test_range])
+    print('Training data:')
+    print('scaled MSE is ', train_loss_scaled, ', ', 'true MSE is ', train_loss)
+    print(' R_squared is ', train_R_sq, ' and AAD is ', train_AAD)
+    print('Test data:')
+    print('scaled MSE is ', test_loss_scaled, ', ', 'true MSE is ', test_loss)
+    print(' R_squared is ', test_R_sq, ' and AAD is ', test_AAD)
 
     model_fig = plt.figure()
     comparison_fig = plt.figure()
@@ -192,10 +198,10 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
         model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y[test_range, i].data.numpy(),
                               color='orange', s=1, label='Experimental data points')
         model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y_model_original[test_range, i].data.numpy(),
-                              color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(R_sq, AAD))
+                              color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(test_R_sq, test_AAD))
         model_plot[i].legend()
         comparison_plot[i].scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
         lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
         comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
         comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
-    return test_loss, train_loss
+    return test_loss, train_loss, test_AAD, train_AAD, test_R_sq, train_AAD
