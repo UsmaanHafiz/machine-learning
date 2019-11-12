@@ -124,7 +124,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
         loss_plot.set_xlabel('Epoch'), loss_plot.set_ylabel('Loss')
         label_plot = []
         for i in range(len(label_plot_index)):
-            label_plot.append(label_fig.add_subplot(1, 2, i+1))
+            label_plot.append(label_fig.add_subplot(1, len(label_plot_index), i+1))
 
     for epoch in range(epochs):
         y_pred = model(x)  # forward pass
@@ -190,8 +190,8 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
         model_fig.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
 
         for i in label_plot_index:
-            model_plot.append(model_fig.add_subplot(1, 2, i + 1))
-            comparison_plot.append(comparison_fig.add_subplot(1, 2, i + 1))
+            model_plot.append(model_fig.add_subplot(1, len(label_plot_index), i + 1))
+            comparison_plot.append(comparison_fig.add_subplot(1, len(label_plot_index), i + 1))
             model_plot[i].set_xlabel(x_label), model_plot[i].set_ylabel(y_label[i])
             comparison_plot[i].set_xlabel('Actual values'), comparison_plot[i].set_ylabel('Predicted values')
             comparison_plot[i].set_title(y_label[i])
@@ -218,3 +218,5 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
         test_loss, train_loss, test_AAD, train_AAD, test_R_sq, train_AAD = neural_network_evaluator(scaled_feature_matrix, scaled_feature_matrix, scaled_label_matrix,
                                      feature_matrix, label_matrix, training_range, test_range, trained_nn,
                                      draw_plots=False)
+
+    return True
