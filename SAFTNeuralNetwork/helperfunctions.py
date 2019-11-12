@@ -169,16 +169,25 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
     test_loss_scaled = loss_func(y_model[test_range], y_scaled[test_range]).item()
     train_loss = loss_func(y_model_original[training_range], y[training_range]).item()
     test_loss = loss_func(y_model_original[test_range], y[test_range]).item()
-    train_R_sq, train_AAD, test_R_sq, test_AAD = 1, 1, 1, 1
+
+    indv_R_sq, indv_AAD = [], []
+    for i in label_plot_index:
+        coeff = fit_evaluator(y[test_range, i], y_model_original[test_range, i])
+        indv_R_sq.append(coeff[0]), indv_AAD.append
+    #TODO: add these onto the graphs
 
     train_R_sq, train_AAD = fit_evaluator(y[training_range], y_model_original[training_range])
     test_R_sq, test_AAD = fit_evaluator(y[test_range], y_model_original[test_range])
+    #TODO: make this scaled
+
     print('Training data:')
     print('scaled MSE is ', train_loss_scaled, ', ', 'true MSE is ', train_loss)
     print(' R_squared is ', train_R_sq, ' and AAD is ', train_AAD)
     print('Test data:')
     print('scaled MSE is ', test_loss_scaled, ', ', 'true MSE is ', test_loss)
     print(' R_squared is ', test_R_sq, ' and AAD is ', test_AAD)
+
+
     if draw_plots is True:
         model_fig = plt.figure()
         comparison_fig = plt.figure()
@@ -200,7 +209,14 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
             model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y_model_original[test_range, i].data.numpy(),
                                   color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(test_R_sq, test_AAD))
             model_plot[i].legend()
+
+            model_plot[i].plot(x, y, color='none')  #TODO: Sub in linspace for x and y range
+            model_plot[i].relim()
+            model_plot[i].autoscale_view()
             comparison_plot[i].scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
+            comparison_plot[i].plot(x, y, color='none')  #TODO: Sub in linspace for x and y range
+            comparison_plot[i].relim()
+            comparison_plot[i].autoscale_view()
             lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
             comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
             comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
@@ -218,5 +234,6 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
         test_loss, train_loss, test_AAD, train_AAD, test_R_sq, train_AAD = neural_network_evaluator(scaled_feature_matrix, scaled_feature_matrix, scaled_label_matrix,
                                      feature_matrix, label_matrix, training_range, test_range, trained_nn,
                                      draw_plots=False)
+    #TODO: Add in test + train loss graphs
 
     return True

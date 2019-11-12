@@ -4,7 +4,7 @@ plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
 plt.rcParams['figure.facecolor'] = 'xkcd:light periwinkle'
 plt.close('all')
 
-(data_headers, data_values) = data_extractor(filename='data_storage.xlsx')
+(data_headers, data_values) = data_extractor(filename='data_storage1.xlsx')
 r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
 temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
 temp_crit_saft = data_values[np.where(data_headers == 'Predicted crit temp /K')[0][0]]
@@ -39,7 +39,7 @@ scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_
 scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=5000, learning_rate=0.002, hidden_neurons=8,
+                                    epochs=1000, learning_rate=0.002, hidden_neurons=8,
                                     loss_func=torch.nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
