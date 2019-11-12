@@ -23,7 +23,7 @@ with open('crit_params_storage.csv', 'a') as csv_file:
 # T_crit_known = 423.27
 
 with open('refrigerant_parameters.csv', 'r') as csv_parameters:
-    reader = csv.reader(csv_parameters)
+    reader = csv.reader(csv_parameters,dialect='excel', lineterminator='\n')
     next(reader)
     for row in reader:
         param_list = []

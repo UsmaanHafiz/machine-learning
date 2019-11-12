@@ -157,7 +157,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
 # takes SCALED x and y and scaling parameters used
 def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_range, model, x_label='Temperature /K',
                              y_label='Vapour pressure /Pa', feature_plot_index=0, label_plot_index=[0],
-                             x_scaling_parameters=None, y_scaling_parameters=None):
+                             x_scaling_parameters=None, y_scaling_parameters=None, draw_plots = True):
     # model.eval()
     y_model = model(x_scaled)
     if y_scaling_parameters is not None:
@@ -179,29 +179,42 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
     print('Test data:')
     print('scaled MSE is ', test_loss_scaled, ', ', 'true MSE is ', test_loss)
     print(' R_squared is ', test_R_sq, ' and AAD is ', test_AAD)
+    if draw_plots is True:
+        model_fig = plt.figure()
+        comparison_fig = plt.figure()
+        model_plot = []
+        comparison_plot = []
+        model_fig.suptitle('Testing neural network fit: model applied to test range data')
+        comparison_fig.suptitle('Testing neural network fit using test range data: predicted against actual values')
+        comparison_fig.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
+        model_fig.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
 
-    model_fig = plt.figure()
-    comparison_fig = plt.figure()
-    model_plot = []
-    comparison_plot = []
-    model_fig.suptitle('Testing neural network fit: model applied to test range data')
-    comparison_fig.suptitle('Testing neural network fit using test range data: predicted against actual values')
-    comparison_fig.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
-    model_fig.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
-
-    for i in label_plot_index:
-        model_plot.append(model_fig.add_subplot(1, 2, i + 1))
-        comparison_plot.append(comparison_fig.add_subplot(1, 2, i + 1))
-        model_plot[i].set_xlabel(x_label), model_plot[i].set_ylabel(y_label[i])
-        comparison_plot[i].set_xlabel('Actual values'), comparison_plot[i].set_ylabel('Predicted values')
-        comparison_plot[i].set_title(y_label[i])
-        model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y[test_range, i].data.numpy(),
-                              color='orange', s=1, label='Experimental data points')
-        model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y_model_original[test_range, i].data.numpy(),
-                              color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(test_R_sq, test_AAD))
-        model_plot[i].legend()
-        comparison_plot[i].scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
-        lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
-        comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
-        comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
+        for i in label_plot_index:
+            model_plot.append(model_fig.add_subplot(1, 2, i + 1))
+            comparison_plot.append(comparison_fig.add_subplot(1, 2, i + 1))
+            model_plot[i].set_xlabel(x_label), model_plot[i].set_ylabel(y_label[i])
+            comparison_plot[i].set_xlabel('Actual values'), comparison_plot[i].set_ylabel('Predicted values')
+            comparison_plot[i].set_title(y_label[i])
+            model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y[test_range, i].data.numpy(),
+                                  color='orange', s=1, label='Experimental data points')
+            model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y_model_original[test_range, i].data.numpy(),
+                                  color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(test_R_sq, test_AAD))
+            model_plot[i].legend()
+            comparison_plot[i].scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
+            lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
+            comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
+            comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
     return test_loss, train_loss, test_AAD, train_AAD, test_R_sq, train_AAD
+
+
+def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
+                                learning_rate=0.001, epochs=500, loss_func=torch.nn.MSELoss()):
+    scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix, training_range)
+    scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
+    for i in range(1, 64, 4):
+        trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
+                                        epochs=10000, learning_rate=0.001, hidden_neurons= i, loss_func=torch.nn.MSELoss(),
+                                        show_progress=False)
+        test_loss, train_loss, test_AAD, train_AAD, test_R_sq, train_AAD = neural_network_evaluator(scaled_feature_matrix, scaled_feature_matrix, scaled_label_matrix,
+                                     feature_matrix, label_matrix, training_range, test_range, trained_nn,
+                                     draw_plots=False)

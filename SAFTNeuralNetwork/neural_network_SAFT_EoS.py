@@ -30,14 +30,15 @@ feature_matrix, label_matrix, training_range, test_range, validation_range = \
 
 feature_to_plot, labels_to_plot = 1, [0, 1]  # choosing which feature and labels to show in plots
 feature_name, label_names = 'Reduced temperature', ['Reduced pressure', 'Specific volume']
-training_range = ([i for j in (range(0, 1800), range(2100, 2300)) for i in j])  # training on all but 3 compounds
-test_range = range(1800, 2100)                                                      # testing on those 3 compounds
+training_range = ([i for j in (range(0, 1500), range(2100, 2300)) for i in j])  # training on all but 6 compounds
+test_range = range(1800, 2100)                                               # testing on 3 compounds
+validation_range = range(1500, 1800)                                           # and validating on the remaining 3
 
 scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix, training_range)
 scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=750, learning_rate=0.001, hidden_neurons=16,
+                                    epochs=5000, learning_rate=0.002, hidden_neurons=8,
                                     loss_func=torch.nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
@@ -46,6 +47,6 @@ test_loss, train_loss = neural_network_evaluator(scaled_feature_matrix, scaled_l
                                                   feature_matrix, label_matrix, training_range, test_range, trained_nn,
                                                   label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                                   x_label=feature_name, y_label=label_names,
-                                                  y_scaling_parameters=label_scaling_parameters)[0:2]
+                                                  y_scaling_parameters=label_scaling_parameters, draw_plots=True)[0:2]
 
 # also need to write additional code to validate model
