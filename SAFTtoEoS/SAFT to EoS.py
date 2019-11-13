@@ -2,7 +2,7 @@
 
 import numpy as np
 import csv
-import saftgamma as saft
+from SAFTtoEoS import saftgamma as saft
 
 # %%
 fieldnames = ['Refrigerant', 'Molecular weight', 'Predicted crit temp', 'Acentric factor', 'No. of C', 'No. of F', 'No. of C=C', 'Temp /K', 'Spec vol /[m^3/mol]', '???', 'Vapour pressure /Pa']
@@ -29,7 +29,7 @@ with open('refrigerant_parameters.csv', 'r') as csv_parameters:
         print('System created for compound', component_name)
         print(''), print(s)
 
-        Pc, Tc, vc = s.critical_point(initial_t=0.9*T_crit_known, v_nd=np.logspace(-4, -2, 70), print_progress=True,
+        Pc, Tc, vc = s.critical_point(initial_t=0.9*T_crit_known, v_nd=np.logspace(-4, -2, 30), print_progress=True,
                                       get_volume=True, print_results=False)
         print('Critical parameters are as follows:')
         print(Pc, Tc, vc)
