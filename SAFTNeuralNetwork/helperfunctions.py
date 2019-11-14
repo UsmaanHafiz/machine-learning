@@ -164,63 +164,67 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
         y_model_original = inverse_tensor_standardiser(y_model, y_scaling_parameters)
     else:
         y_model_original = y_model
+
     loss_func = torch.nn.MSELoss()
     train_loss_scaled = loss_func(y_model[training_range], y_scaled[training_range]).item()
     test_loss_scaled = loss_func(y_model[test_range], y_scaled[test_range]).item()
-    train_loss = loss_func(y_model_original[training_range], y[training_range]).item()
-    test_loss = loss_func(y_model_original[test_range], y[test_range]).item()
+    train_R_sq_scaled, train_AAD_scaled = fit_evaluator(y_scaled[training_range], y_model[training_range])
+    test_R_sq_scaled, test_AAD_scaled = fit_evaluator(y_scaled[test_range], y_model[test_range])
 
     indv_R_sq, indv_AAD = [], []
     for i in label_plot_index:
-        coeff = fit_evaluator(y[test_range, i], y_model_original[test_range, i])
-        indv_R_sq.append(coeff[0]), indv_AAD.append
-    #TODO: add these onto the graphs
-
-    train_R_sq, train_AAD = fit_evaluator(y[training_range], y_model_original[training_range])
-    test_R_sq, test_AAD = fit_evaluator(y[test_range], y_model_original[test_range])
-    #TODO: make this scaled
+        values = fit_evaluator(y[test_range, i], y_model_original[test_range, i])
+        indv_R_sq.append(values[0]), indv_AAD.append(values[1])
 
     print('Training data:')
-    print('scaled MSE is ', train_loss_scaled, ', ', 'true MSE is ', train_loss)
-    print(' R_squared is ', train_R_sq, ' and AAD is ', train_AAD)
+    print('scaled MSE is ', train_loss_scaled, ', scaled R_squared is ', train_R_sq_scaled,
+          ', and scaled AAD is ', train_AAD_scaled)
     print('Test data:')
-    print('scaled MSE is ', test_loss_scaled, ', ', 'true MSE is ', test_loss)
-    print(' R_squared is ', test_R_sq, ' and AAD is ', test_AAD)
-
+    print('scaled MSE is ', test_loss_scaled, ', scaled R_squared is ', test_R_sq_scaled,
+          ', and scaled AAD is ', test_AAD_scaled)
 
     if draw_plots is True:
-        model_fig = plt.figure()
-        comparison_fig = plt.figure()
-        model_plot = []
-        comparison_plot = []
+        model_fig, comparison_fig = plt.figure(), plt.figure()
+        model_plot, comparison_plot = [], []
         model_fig.suptitle('Testing neural network fit: model applied to test range data')
         comparison_fig.suptitle('Testing neural network fit using test range data: predicted against actual values')
-        comparison_fig.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
-        model_fig.text(0.5, 0, 'Loss=%f' % test_loss, fontdict={'size': 10, 'color': 'red'})
 
-        for i in label_plot_index:
+        for i in range(len(label_plot_index)):
             model_plot.append(model_fig.add_subplot(1, len(label_plot_index), i + 1))
-            comparison_plot.append(comparison_fig.add_subplot(1, len(label_plot_index), i + 1))
             model_plot[i].set_xlabel(x_label), model_plot[i].set_ylabel(y_label[i])
+            model_plot[i].scatter(x[test_range, feature_plot_index].numpy(),
+                                  y[test_range, label_plot_index[i]].data.numpy(),
+                                  color='orange', s=1, label='Experimental data points')
+            model_plot[i].scatter(x[test_range, feature_plot_index].numpy(),
+                                  y_model_original[test_range, label_plot_index[i]].data.numpy(),
+                                  color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(indv_R_sq[i], indv_AAD[i]))
+            model_plot[i].legend()
+            x_range = np.linspace(min(x[test_range, feature_plot_index].data.numpy()),
+                                  max(x[test_range, feature_plot_index].data.numpy()), 5)
+            y_range = np.linspace(min(y[test_range, label_plot_index[i]].data.numpy()),
+                                  max(y[test_range, label_plot_index[i]].data.numpy()), 5)
+            model_plot[i].plot(x_range, y_range, color='none')
+            model_plot[i].relim(), model_plot[i].autoscale_view()
+
+            comparison_plot.append(comparison_fig.add_subplot(1, len(label_plot_index), i + 1))
             comparison_plot[i].set_xlabel('Actual values'), comparison_plot[i].set_ylabel('Predicted values')
             comparison_plot[i].set_title(y_label[i])
-            model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y[test_range, i].data.numpy(),
-                                  color='orange', s=1, label='Experimental data points')
-            model_plot[i].scatter(x[test_range, feature_plot_index].numpy(), y_model_original[test_range, i].data.numpy(),
-                                  color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(test_R_sq, test_AAD))
-            model_plot[i].legend()
-
-            model_plot[i].plot(x, y, color='none')  #TODO: Sub in linspace for x and y range
-            model_plot[i].relim()
-            model_plot[i].autoscale_view()
-            comparison_plot[i].scatter(y[test_range, i].data.numpy(), y_model_original[test_range, i].data.numpy(), s=1)
-            comparison_plot[i].plot(x, y, color='none')  #TODO: Sub in linspace for x and y range
-            comparison_plot[i].relim()
-            comparison_plot[i].autoscale_view()
+            comparison_plot[i].scatter(y[test_range, label_plot_index[i]].data.numpy(),
+                                       y_model_original[test_range, i].data.numpy(), s=1)
+            x_range = np.linspace(min(y[test_range, label_plot_index[i]].data.numpy()),
+                                  max(y[test_range, label_plot_index[i]]), 5)
+            y_range = np.linspace(min(y_model_original[test_range, label_plot_index[i]].data.numpy()),
+                                  max(y_model_original[test_range, label_plot_index[i]]), 5)
+            comparison_plot[i].plot(x_range, y_range, color='none')
+            comparison_plot[i].relim(), comparison_plot[i].autoscale_view()
             lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
             comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
             comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
-    return test_loss, train_loss, test_AAD, train_AAD, test_R_sq, train_AAD
+
+        train_data_metrics = [train_loss_scaled, train_R_sq_scaled, train_AAD_scaled]
+        test_data_metrics = [test_loss_scaled, test_R_sq_scaled, test_AAD_scaled]
+
+    return train_data_metrics, test_data_metrics
 
 
 def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
@@ -231,9 +235,7 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
         trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
                                         epochs=10000, learning_rate=0.001, hidden_neurons= i, loss_func=torch.nn.MSELoss(),
                                         show_progress=False)
-        test_loss, train_loss, test_AAD, train_AAD, test_R_sq, train_AAD = neural_network_evaluator(scaled_feature_matrix, scaled_feature_matrix, scaled_label_matrix,
+        train_data_metrics, test_data_metrics  = neural_network_evaluator(scaled_feature_matrix, scaled_feature_matrix, scaled_label_matrix,
                                      feature_matrix, label_matrix, training_range, test_range, trained_nn,
                                      draw_plots=False)
-    #TODO: Add in test + train loss graphs
-
     return True

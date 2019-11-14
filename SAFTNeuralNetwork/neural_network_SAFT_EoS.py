@@ -1,6 +1,6 @@
 from SAFTNeuralNetwork.helperfunctions import *
 plt.style.use('seaborn-darkgrid')
-plt.rcParams['axes.facecolor'] = 'xkcd:baby pink'
+plt.rcParams['axes.facecolor'] = 'xkcd:cloudy blue'
 plt.rcParams['figure.facecolor'] = 'xkcd:light periwinkle'
 plt.close('all')
 
@@ -39,16 +39,17 @@ scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_
 scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=1000, learning_rate=0.002, hidden_neurons=8,
+                                    epochs=500, learning_rate=0.002, hidden_neurons=8,
                                     loss_func=torch.nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
 
-test_loss, train_loss = neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
-                                                  feature_matrix, label_matrix, training_range, test_range, trained_nn,
-                                                  label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
-                                                  x_label=feature_name, y_label=label_names,
-                                                  y_scaling_parameters=label_scaling_parameters, draw_plots=True)[0:2]
+train_data_metrics, test_data_metrics = \
+    neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
+                             feature_matrix, label_matrix, training_range, test_range, trained_nn,
+                             label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
+                             x_label=feature_name, y_label=label_names,
+                             y_scaling_parameters=label_scaling_parameters, draw_plots=True)
 
 # neural_network_fitting_tool()
 
