@@ -209,10 +209,9 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
             lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
             comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
             comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
-
-        train_data_metrics = [train_loss_scaled, train_R_sq_scaled, train_AAD_scaled]
-        test_data_metrics = [test_loss_scaled, test_R_sq_scaled, test_AAD_scaled]
-        return train_data_metrics, test_data_metrics
+    train_data_metrics = [train_loss_scaled, train_R_sq_scaled, train_AAD_scaled]
+    test_data_metrics = [test_loss_scaled, test_R_sq_scaled, test_AAD_scaled]
+    return train_data_metrics, test_data_metrics
 
 
 def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
