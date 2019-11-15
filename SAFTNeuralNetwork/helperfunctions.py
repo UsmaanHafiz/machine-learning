@@ -55,7 +55,7 @@ def fit_evaluator(label, label_correlation):
     SS_residual = np.sum(np.square((y1 - y2)))
     SS_total = (len(y1) - 1) * np.var(y1, ddof=1)
     R_squared = 1 - (SS_residual / SS_total)
-    AAD = 100 * ((1 / len(y1)) * np.sum(abs(y2 - y1) / y1))
+    AAD = 100 * ((1 / len(y1)) * np.sum(abs((y2 - y1) / y1)))
     return np.round(R_squared, decimals=5), np.round(AAD, decimals=5)
 
 
@@ -130,7 +130,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
         if epoch == 0 and show_progress is True:
             loss_fig.show()
             label_fig.show()
-        if epoch % 100 == 0 and show_progress is True:
+        if epoch % 200 == 0 and show_progress is True:
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
             for i in range(len(label_plot_index)):
                 label_plot[i].cla()
@@ -249,11 +249,11 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
     loss_plot.plot(hidden_neuron_range, train_loss, label='train')
     loss_plot.plot(hidden_neuron_range, test_loss, label='test')
     loss_plot.legend()
-    R_sq_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled R_sq')
+    R_sq_plot.set_xlabel('Number of hidden neurons'), R_sq_plot.set_ylabel('Scaled R_sq')
     R_sq_plot.plot(hidden_neuron_range, train_R_sq, label='train')
     R_sq_plot.plot(hidden_neuron_range, test_R_sq, label='test')
     R_sq_plot.legend()
-    AAD_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled AAD')
+    AAD_plot.set_xlabel('Number of hidden neurons'), AAD_plot.set_ylabel('Scaled AAD')
     AAD_plot.plot(hidden_neuron_range, train_AAD, label='train')
     AAD_plot.plot(hidden_neuron_range, test_AAD, label='test')
     AAD_plot.legend()
