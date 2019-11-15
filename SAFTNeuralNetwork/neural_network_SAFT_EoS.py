@@ -63,9 +63,16 @@ train_data_metrics, test_data_metrics = \
                              x_label=feature_name, y_label=label_names,
                              y_scaling_parameters=label_scaling_parameters, draw_plots=True)
 
+neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
+                         feature_matrix, label_matrix, training_range, test_range, trained_nn,
+                         label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
+                         x_label=feature_name, y_label=label_names,
+                         y_scaling_parameters=label_scaling_parameters, draw_plots=True,
+                         plot_for_test_range=False, plot_range=range[0, 2300])
+
 neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
-                                learning_rate=0.001, epochs=500, loss_func=nn.MSELoss(),
-                                hidden_neuron_range=range(1, 100, 5))
+                            learning_rate=0.001, epochs=500, loss_func=nn.MSELoss(),
+                            hidden_neuron_range=range(1, 100, 5))
 
 
 # also need to write additional code to validate model

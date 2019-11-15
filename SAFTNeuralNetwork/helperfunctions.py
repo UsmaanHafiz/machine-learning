@@ -144,7 +144,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
 
 def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_range, model, x_label='Temperature /K',
                              y_label='Vapour pressure /Pa', feature_plot_index=0, label_plot_index=[0],
-                             y_scaling_parameters=None, draw_plots = True):
+                             y_scaling_parameters=None, draw_plots=True, plot_for_test_range=True, plot_range=None):
     # model.eval()
     y_model_scaled = model(x_scaled)
     if y_scaling_parameters is not None:
@@ -169,7 +169,8 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
     print('Test data:')
     print('scaled MSE is ', test_loss_scaled, ', scaled R_squared is ', test_R_sq_scaled,
           ', and scaled AAD is ', test_AAD_scaled)
-
+    if plot_for_test_range is True:
+        plot_range = test_range
     if draw_plots is True:
         model_fig, comparison_fig = plt.figure(), plt.figure()
         model_plot, comparison_plot = [], []
@@ -179,17 +180,17 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
         for i in range(len(label_plot_index)):
             model_plot.append(model_fig.add_subplot(1, len(label_plot_index), i + 1))
             model_plot[i].set_xlabel(x_label), model_plot[i].set_ylabel(y_label[i])
-            model_plot[i].scatter(x[test_range, feature_plot_index].numpy(),
-                                  y[test_range, label_plot_index[i]].data.numpy(),
+            model_plot[i].scatter(x[plot_range, feature_plot_index].numpy(),
+                                  y[plot_range, label_plot_index[i]].data.numpy(),
                                   color='orange', s=1, label='Experimental')
-            model_plot[i].scatter(x[test_range, feature_plot_index].numpy(),
-                                  y_model[test_range, label_plot_index[i]].data.numpy(),
+            model_plot[i].scatter(x[plot_range, feature_plot_index].numpy(),
+                                  y_model[plot_range, label_plot_index[i]].data.numpy(),
                                   color='blue', s=1,
                                   label='ANN model \n R^2:{} AAD:{}'.format(indv_R_sq[i], indv_AAD[i]))
-            x_range = np.linspace(min(x[test_range, feature_plot_index].data.numpy()),
-                                  max(x[test_range, feature_plot_index].data.numpy()), 5)
-            y_range = np.linspace(min(y[test_range, label_plot_index[i]].data.numpy()),
-                                  max(y[test_range, label_plot_index[i]].data.numpy()), 5)
+            x_range = np.linspace(min(x[plot_range, feature_plot_index].data.numpy()),
+                                  max(x[plot_range, feature_plot_index].data.numpy()), 5)
+            y_range = np.linspace(min(y[plot_range, label_plot_index[i]].data.numpy()),
+                                  max(y[plot_range, label_plot_index[i]].data.numpy()), 5)
             model_plot[i].plot(x_range, y_range, color='none')
             model_plot[i].relim(), model_plot[i].autoscale_view()
             model_plot[i].legend()
@@ -197,17 +198,18 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
             comparison_plot.append(comparison_fig.add_subplot(1, len(label_plot_index), i + 1))
             comparison_plot[i].set_xlabel('Actual values'), comparison_plot[i].set_ylabel('Predicted values')
             comparison_plot[i].set_title(y_label[i])
-            comparison_plot[i].scatter(y[test_range, label_plot_index[i]].data.numpy(),
-                                       y_model[test_range, i].data.numpy(), s=1)
-            x_range = np.linspace(min(y[test_range, label_plot_index[i]].data.numpy()),
-                                  max(y[test_range, label_plot_index[i]]), 5)
-            y_range = np.linspace(min(y_model[test_range, label_plot_index[i]].data.numpy()),
-                                  max(y_model[test_range, label_plot_index[i]]), 5)
+            comparison_plot[i].scatter(y[plot_range, label_plot_index[i]].data.numpy(),
+                                       y_model[plot_range, i].data.numpy(), s=1)
+            x_range = np.linspace(min(y[plot_range, label_plot_index[i]].data.numpy()),
+                                  max(y[plot_range, label_plot_index[i]]), 5)
+            y_range = np.linspace(min(y_model[plot_range, label_plot_index[i]].data.numpy()),
+                                  max(y_model[plot_range, label_plot_index[i]]), 5)
             comparison_plot[i].plot(x_range, y_range, color='none')
             comparison_plot[i].relim(), comparison_plot[i].autoscale_view()
             lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
             comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
             comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
+
         train_data_metrics = [train_loss_scaled, train_R_sq_scaled, train_AAD_scaled]
         test_data_metrics = [test_loss_scaled, test_R_sq_scaled, test_AAD_scaled]
     return train_data_metrics, test_data_metrics
