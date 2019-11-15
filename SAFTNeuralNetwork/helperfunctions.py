@@ -9,7 +9,7 @@ matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 
 
-def move_figure(position="top-right"):  # Positions figures nicely
+def move_figure(position="top-right"):
     '''
     Possible positions are:
     top, bottom, left, right, top-left, top-right, bottom-left, bottom-right
@@ -40,7 +40,6 @@ def move_figure(position="top-right"):  # Positions figures nicely
     #     mgr.window.setGeometry(px/2 + d, py/2 + 5*d, px/2 - 2*d, py/2 - 4*d)
 
 
-# extracts data from an excel file
 def data_extractor(column_values=None, filename='refrigerant_data.xlsx'):
     raw_data = pd.read_excel(filename)
     column_names = raw_data.columns.values
@@ -50,17 +49,14 @@ def data_extractor(column_values=None, filename='refrigerant_data.xlsx'):
     return column_names, column_values
 
 
-# given a set of experimental label data and predicted label data, returns R^2 and AAD
 def fit_evaluator(label, label_correlation):
     y1 = label.clone().data.numpy()
     y2 = label_correlation.clone().data.numpy()
-    print(y1.shape)
-    print(y2.shape)
     SS_residual = np.sum(np.square((y1 - y2)))
     SS_total = (len(y1) - 1) * np.var(y1, ddof=1)
     R_squared = 1 - (SS_residual / SS_total)
     AAD = 100 * ((1 / len(y1)) * np.sum(abs(y2 - y1) / y1))
-    return np.round(R_squared, decimals=4), np.round(AAD, decimals=4)
+    return np.round(R_squared, decimals=5), np.round(AAD, decimals=5)
 
 
 def matrix_to_tensor(array, data_range):
@@ -71,7 +67,6 @@ def matrix_to_tensor(array, data_range):
     return torch.as_tensor(frame.transpose().values).float()
 
 
-# prepares data and ranges for neural_network_trainer()
 def nn_data_preparer(features, labels):
     sub_range_size = int(0.4 * len(labels[0]))
     training_range = random.sample(range(0, len(labels[0])), sub_range_size)
@@ -82,7 +77,6 @@ def nn_data_preparer(features, labels):
     return X, Y, training_range, test_range, validation_range
 
 
-# standardises a tensor's values based on statistical parameters computed from tensor data in data_range
 def tensor_standardiser(tensor, data_range):
     x = tensor.clone().data.numpy()
     scaling_parameters=[]
@@ -101,20 +95,16 @@ def inverse_tensor_standardiser(tensor, scaling_parameters):
     return matrix_to_tensor(x, range(0, len(x[0]))).t()
 
 
-# trains a neural network to predict y (prepared from label data) based on x (prepared from feature data)
 # takes SCALED features and labels
-def neural_network_trainer(features, labels, training_range, test_range, hidden_neurons=32, learning_rate=0.001, epochs=500,
-                           loss_func=torch.nn.MSELoss(), feature_plot_index=0,  label_plot_index=[0],
+def neural_network_trainer(features, labels, training_range, test_range, hidden_neurons=32, learning_rate=0.001,
+                           epochs=500, loss_func=nn.MSELoss(), feature_plot_index=0,  label_plot_index=[0],
                            x_label='Reduced temperature', y_label=['Reduced pressure'], show_progress=True):
-    # setting model parameters
-    input_neurons = features.shape[1]
-    output_neurons = labels.shape[1]
+    input_neurons, output_neurons = features.shape[1], labels.shape[1]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
     model.train()
     print(model)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
-    x = features[training_range]
-    y = labels[training_range]
+    x, y = features[training_range], labels[training_range]
     if show_progress:
         loss_fig = plt.figure()
         move_figure(position="left")
@@ -127,20 +117,20 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
             label_plot.append(label_fig.add_subplot(1, len(label_plot_index), i+1))
 
     for epoch in range(epochs):
-        y_pred = model(x)  # forward pass
-        loss = loss_func(y_pred, y)  # computing loss
-        loss.backward()  # backward pass
+        y_pred = model(x)
+        loss = loss_func(y_pred, y)
+        loss.backward()
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
+
         if epoch > 1 and show_progress is True:
             loss_plot.set(ylim=(0, 3*loss.item()), xlim=(0, epoch))
         loss_plot.scatter(epoch, loss.item(), s=1)
         if epoch == 0 and show_progress is True:
             loss_fig.show()
             label_fig.show()
-        if epoch % 100 == 0 and show_progress is True:  # plotting and showing learning process
+        if epoch % 100 == 0 and show_progress is True:
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
-            # label_fig.text(0.5, 0, 'Loss=%f' % loss.data.numpy(), fontdict={'size': 10, 'color': 'red'})
             for i in range(len(label_plot_index)):
                 label_plot[i].cla()
                 label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])
@@ -152,28 +142,25 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
     return model
 
 
-# takes the trained neural network with accompanying data and evaluates the model based on subset of data
-# can be used for testing and validation
-# takes SCALED x and y and scaling parameters used
 def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_range, model, x_label='Temperature /K',
                              y_label='Vapour pressure /Pa', feature_plot_index=0, label_plot_index=[0],
-                             x_scaling_parameters=None, y_scaling_parameters=None, draw_plots = True):
+                             y_scaling_parameters=None, draw_plots = True):
     # model.eval()
-    y_model = model(x_scaled)
+    y_model_scaled = model(x_scaled)
     if y_scaling_parameters is not None:
-        y_model_original = inverse_tensor_standardiser(y_model, y_scaling_parameters)
+        y_model = inverse_tensor_standardiser(y_model_scaled, y_scaling_parameters)
     else:
-        y_model_original = y_model
+        y_model = y_model_scaled
+        print('Scaling parameters not passed to function; continuing anyway')
 
     loss_func = torch.nn.MSELoss()
-    train_loss_scaled = loss_func(y_model[training_range], y_scaled[training_range]).item()
-    test_loss_scaled = loss_func(y_model[test_range], y_scaled[test_range]).item()
-    train_R_sq_scaled, train_AAD_scaled = fit_evaluator(y_scaled[training_range], y_model[training_range])
-    test_R_sq_scaled, test_AAD_scaled = fit_evaluator(y_scaled[test_range], y_model[test_range])
-
+    train_loss_scaled = loss_func(y_model_scaled[training_range], y_scaled[training_range]).item()
+    test_loss_scaled = loss_func(y_model_scaled[test_range], y_scaled[test_range]).item()
+    train_R_sq_scaled, train_AAD_scaled = fit_evaluator(y_scaled[training_range], y_model_scaled[training_range])
+    test_R_sq_scaled, test_AAD_scaled = fit_evaluator(y_scaled[test_range], y_model_scaled[test_range])
     indv_R_sq, indv_AAD = [], []
     for i in label_plot_index:
-        values = fit_evaluator(y[test_range, i], y_model_original[test_range, i])
+        values = fit_evaluator(y[test_range, i], y_model[test_range, i])
         indv_R_sq.append(values[0]), indv_AAD.append(values[1])
 
     print('Training data:')
@@ -194,48 +181,72 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
             model_plot[i].set_xlabel(x_label), model_plot[i].set_ylabel(y_label[i])
             model_plot[i].scatter(x[test_range, feature_plot_index].numpy(),
                                   y[test_range, label_plot_index[i]].data.numpy(),
-                                  color='orange', s=1, label='Experimental data points')
+                                  color='orange', s=1, label='Experimental')
             model_plot[i].scatter(x[test_range, feature_plot_index].numpy(),
-                                  y_model_original[test_range, label_plot_index[i]].data.numpy(),
-                                  color='blue', s=1, label='ANN model \n R^2:{} AAD:{}'.format(indv_R_sq[i], indv_AAD[i]))
-            model_plot[i].legend()
+                                  y_model[test_range, label_plot_index[i]].data.numpy(),
+                                  color='blue', s=1,
+                                  label='ANN model \n R^2:{} AAD:{}'.format(indv_R_sq[i], indv_AAD[i]))
             x_range = np.linspace(min(x[test_range, feature_plot_index].data.numpy()),
                                   max(x[test_range, feature_plot_index].data.numpy()), 5)
             y_range = np.linspace(min(y[test_range, label_plot_index[i]].data.numpy()),
                                   max(y[test_range, label_plot_index[i]].data.numpy()), 5)
             model_plot[i].plot(x_range, y_range, color='none')
             model_plot[i].relim(), model_plot[i].autoscale_view()
+            model_plot[i].legend()
 
             comparison_plot.append(comparison_fig.add_subplot(1, len(label_plot_index), i + 1))
             comparison_plot[i].set_xlabel('Actual values'), comparison_plot[i].set_ylabel('Predicted values')
             comparison_plot[i].set_title(y_label[i])
             comparison_plot[i].scatter(y[test_range, label_plot_index[i]].data.numpy(),
-                                       y_model_original[test_range, i].data.numpy(), s=1)
+                                       y_model[test_range, i].data.numpy(), s=1)
             x_range = np.linspace(min(y[test_range, label_plot_index[i]].data.numpy()),
                                   max(y[test_range, label_plot_index[i]]), 5)
-            y_range = np.linspace(min(y_model_original[test_range, label_plot_index[i]].data.numpy()),
-                                  max(y_model_original[test_range, label_plot_index[i]]), 5)
+            y_range = np.linspace(min(y_model[test_range, label_plot_index[i]].data.numpy()),
+                                  max(y_model[test_range, label_plot_index[i]]), 5)
             comparison_plot[i].plot(x_range, y_range, color='none')
             comparison_plot[i].relim(), comparison_plot[i].autoscale_view()
             lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
             comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
             comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
-
         train_data_metrics = [train_loss_scaled, train_R_sq_scaled, train_AAD_scaled]
         test_data_metrics = [test_loss_scaled, test_R_sq_scaled, test_AAD_scaled]
-
     return train_data_metrics, test_data_metrics
 
 
 def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
-                                learning_rate=0.001, epochs=500, loss_func=torch.nn.MSELoss()):
-    scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix, training_range)
-    scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
-    for i in range(1, 64, 4):
+                                learning_rate=0.001, epochs=500, loss_func=nn.MSELoss(),
+                                hidden_neuron_range=range(1, 100, 5)):
+    fitting_fig = plt.figure()
+    move_figure(position="left")
+    loss_plot = fitting_fig.add_subplot(1, 3, 1)
+    R_sq_plot = fitting_fig.add_subplot(1, 3, 2)
+    AAD_plot = fitting_fig.add_subplot(1, 3, 3)
+    train_loss, test_loss, train_R_sq, test_R_sq, train_AAD, test_AAD = [], [], [], [], [], []
+    for i in hidden_neuron_range:
+        scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix.clone(), training_range)
+        scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix.clone(), training_range)
+
         trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                        epochs=10000, learning_rate=0.001, hidden_neurons= i, loss_func=torch.nn.MSELoss(),
-                                        show_progress=False)
-        train_data_metrics, test_data_metrics  = neural_network_evaluator(scaled_feature_matrix, scaled_feature_matrix, scaled_label_matrix,
+                                            epochs=epochs, learning_rate=learning_rate, hidden_neurons=i,
+                                            loss_func=loss_func, show_progress=False)
+
+        train_data_metrics, test_data_metrics = \
+            neural_network_evaluator(scaled_feature_matrix.clone(), scaled_label_matrix.copy(),
                                      feature_matrix, label_matrix, training_range, test_range, trained_nn,
                                      draw_plots=False)
+
+        train_loss.append(train_data_metrics[0]), test_loss.append(test_data_metrics[0])
+        train_R_sq.append(train_data_metrics[1]), test_R_sq.append(test_data_metrics[1])
+        train_AAD.append(train_data_metrics[2]), test_AAD.append(test_data_metrics[2])
+
+    loss_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled loss')
+    loss_plot.plot(hidden_neuron_range, train_loss, label='train')
+    loss_plot.plot(hidden_neuron_range, test_loss, label='test')
+    R_sq_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled R_sq')
+    R_sq_plot.plot(hidden_neuron_range, train_R_sq, label='train')
+    R_sq_plot.plot(hidden_neuron_range, test_R_sq, label='test')
+    AAD_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled AAD')
+    AAD_plot.plot(hidden_neuron_range, train_AAD, label='train')
+    AAD_plot.plot(hidden_neuron_range, test_AAD, label='test')
+    plt.show()
     return True

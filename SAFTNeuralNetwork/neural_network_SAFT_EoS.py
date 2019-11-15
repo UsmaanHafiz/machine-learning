@@ -28,19 +28,31 @@ labels = [reduced_pressure, spec_vol_liq, spec_vol_vap]
 
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
     nn_data_preparer(features, labels)
+feature_matrix_debug = feature_matrix.clone()
+label_matrix_debug = label_matrix.clone()
 
 feature_to_plot, labels_to_plot = 1, [0, 1, 2]  # choosing which feature and labels to show in plots
-feature_name, label_names = 'Reduced temperature', ['Reduced pressure', 'Specific liquid volume', 'Specific vapour volume']
-training_range = ([i for j in (range(0, 1500), range(2100, 2300)) for i in j])  # training on all but 6 compounds
-test_range = range(1800, 2100)                                               # testing on 3 compounds
-validation_range = range(1500, 1800)                                           # and validating on the remaining 3
+feature_name, label_names = 'Reduced temperature',\
+                             ['Reduced pressure', 'Specific liquid volume', 'Specific vapour volume']
+
+test_range = [i * 100 for i in random.sample(range(0, 23), 3)]  # testing on 3 compounds
+validation_range = [j * 100 for j in                           # validating on 3 and training on rest
+                    random.sample(list([x for x in list(range(0, 23))
+                                        if x not in [i / 100 for i in test_range]]), 3)]
+for p in range(len(test_range)):
+    for q in range(99):
+        test_range.append(test_range[p] + q + 1)
+        validation_range.append(validation_range[p] + q + 1)
+training_range = list(z for z in list(range(0, 2300)) if z not in (test_range, validation_range))
+test_range.sort(), validation_range.sort()
 
 scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix, training_range)
 scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix, training_range)
+scaled_feature_matrix_debug, scaled_label_matrix_debug = scaled_feature_matrix.clone(), scaled_label_matrix.clone()
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
                                     epochs=500, learning_rate=0.002, hidden_neurons=8,
-                                    loss_func=torch.nn.MSELoss(),
+                                    loss_func=nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
 
@@ -51,6 +63,9 @@ train_data_metrics, test_data_metrics = \
                              x_label=feature_name, y_label=label_names,
                              y_scaling_parameters=label_scaling_parameters, draw_plots=True)
 
-# neural_network_fitting_tool()
+neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
+                                learning_rate=0.001, epochs=500, loss_func=nn.MSELoss(),
+                                hidden_neuron_range=range(1, 100, 5))
+
 
 # also need to write additional code to validate model
