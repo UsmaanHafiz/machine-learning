@@ -50,7 +50,7 @@ scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix
 scaled_feature_matrix_debug, scaled_label_matrix_debug = scaled_feature_matrix.clone(), scaled_label_matrix.clone()
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=5000, learning_rate=0.002, hidden_neurons=6,
+                                    epochs=5000, learning_rate=0.003, hidden_neurons=16,
                                     loss_func=nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
@@ -69,8 +69,12 @@ neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
                          y_scaling_parameters=label_scaling_parameters, draw_plots=True,
                          plot_for_test_range=False, plot_range=range(0, 2300))
 
-neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
-                            learning_rate=0.002, epochs=5000, loss_func=nn.MSELoss(),
-                            hidden_neuron_range=[4, 5, 6, 7, 8, 16])
+# neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
+#                             learning_rate=0.003, epochs=5000, loss_func=nn.MSELoss(),
+#                             hidden_neuron_range=[4, 6, 8, 16, 32, 48, 64])
 
+# TODO: Try fitting with ln(P), 1/T, densities instead of volumes, maybe compressibility factors
 # TODO: write additional code to validate model
+# TODO: Use outliers in training set?
+# TODO: Generate additional high temp data range from SAFT to try to fit liquid volumes better
+# TODO: Get polarity/dipole moment values from Gaussian?

@@ -4,6 +4,7 @@ from torch import nn
 class NeuralNet(nn.Module):
     def __init__(self, input_neurons, output_neurons, hidden_neurons):
         super(NeuralNet, self).__init__()
+        # TODO: Add variable number of layer input to class
         self.layer = nn.Sequential(
             nn.ELU(),
             nn.Linear(input_neurons, hidden_neurons),

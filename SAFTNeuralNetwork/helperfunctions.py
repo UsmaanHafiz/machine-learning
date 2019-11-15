@@ -134,7 +134,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
             print('epoch: {}; loss: {}'.format(epoch, loss.item()))
             for i in range(len(label_plot_index)):
                 label_plot[i].cla()
-                label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])
+                label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])  # TODO: add 'scaled' into label
                 label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
                                       y[:, label_plot_index[i]].data.numpy(), color='orange', s=1)
                 label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
@@ -228,6 +228,20 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
     R_sq_plot = fitting_fig.add_subplot(1, 3, 2)
     AAD_plot = fitting_fig.add_subplot(1, 3, 3)
     train_loss, test_loss, train_R_sq, test_R_sq, train_AAD, test_AAD = [], [], [], [], [], []
+    loss_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled loss')
+    R_sq_plot.set_xlabel('Number of hidden neurons'), R_sq_plot.set_ylabel('Scaled R_sq')
+    AAD_plot.set_xlabel('Number of hidden neurons'), AAD_plot.set_ylabel('Scaled AAD')
+
+    loss_plot.scatter(0, 0, label='train', color='xkcd:orange red')
+    loss_plot.scatter(0, 0, label='test', color='xkcd:light aqua')
+    loss_plot.legend()
+    R_sq_plot.scatter(0, 0, label='train', color = 'xkcd:orange red')
+    R_sq_plot.scatter(0, 0, label='test', color='xkcd:light aqua')
+    R_sq_plot.legend()
+    AAD_plot.scatter(0, 0, label='train', color='xkcd:orange red')
+    AAD_plot.scatter(0, 0, label='test', color='xkcd:light aqua')
+    AAD_plot.legend()
+    plt.show()
     for i in hidden_neuron_range:
         scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix.clone(), training_range)
         scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix.clone(), training_range)
@@ -240,22 +254,23 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
             neural_network_evaluator(scaled_feature_matrix.clone(), scaled_label_matrix.clone(),
                                      feature_matrix, label_matrix, training_range, test_range, trained_nn,
                                      draw_plots=False, y_scaling_parameters=label_scaling_parameters)
+        loss_plot.scatter(i, train_data_metrics[0], color='xkcd:orange red')
+        loss_plot.scatter(i, test_data_metrics[0], color='xkcd:light aqua')
+        R_sq_plot.scatter(i, train_data_metrics[1], color='xkcd:orange red')
+        R_sq_plot.scatter(i, test_data_metrics[1], color='xkcd:light aqua')
+        AAD_plot.scatter(i, train_data_metrics[2], color='xkcd:orange red')
+        AAD_plot.scatter(i, test_data_metrics[2], color='xkcd:light aqua')
+        fitting_fig.canvas.start_event_loop(0.001)
 
         train_loss.append(train_data_metrics[0]), test_loss.append(test_data_metrics[0])
         train_R_sq.append(train_data_metrics[1]), test_R_sq.append(test_data_metrics[1])
         train_AAD.append(train_data_metrics[2]), test_AAD.append(test_data_metrics[2])
 
-    loss_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled loss')
-    loss_plot.plot(hidden_neuron_range, train_loss, label='train')
-    loss_plot.plot(hidden_neuron_range, test_loss, label='test')
-    loss_plot.legend()
-    R_sq_plot.set_xlabel('Number of hidden neurons'), R_sq_plot.set_ylabel('Scaled R_sq')
-    R_sq_plot.plot(hidden_neuron_range, train_R_sq, label='train')
-    R_sq_plot.plot(hidden_neuron_range, test_R_sq, label='test')
-    R_sq_plot.legend()
-    AAD_plot.set_xlabel('Number of hidden neurons'), AAD_plot.set_ylabel('Scaled AAD')
-    AAD_plot.plot(hidden_neuron_range, train_AAD, label='train')
-    AAD_plot.plot(hidden_neuron_range, test_AAD, label='test')
-    AAD_plot.legend()
+    loss_plot.plot(hidden_neuron_range, train_loss, color='xkcd:orange red', label='train')
+    loss_plot.plot(hidden_neuron_range, test_loss, color='xkcd:light aqua', label='test')
+    R_sq_plot.plot(hidden_neuron_range, train_R_sq, color='xkcd:orange red', label='train')
+    R_sq_plot.plot(hidden_neuron_range, test_R_sq, color='xkcd:light aqua', label='test')
+    AAD_plot.plot(hidden_neuron_range, train_AAD, color='xkcd:orange red', label='train')
+    AAD_plot.plot(hidden_neuron_range, test_AAD, color='xkcd:light aqua', label='test')
     plt.show()
     return True
