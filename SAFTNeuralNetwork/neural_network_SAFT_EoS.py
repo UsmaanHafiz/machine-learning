@@ -20,7 +20,6 @@ num_C = data_values[np.where(data_headers == 'No. of C')[0][0]]
 num_F = data_values[np.where(data_headers == 'No. of F')[0][0]]
 num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
 
-# setting features and labels
 reduced_temp = temp/temp_crit_saft
 features = [mol_weight, reduced_temp, num_C, num_F, omega]
 reduced_pressure = pressure/pressure_crit_saft
@@ -31,7 +30,7 @@ feature_matrix, label_matrix, training_range, test_range, validation_range = \
 feature_matrix_debug = feature_matrix.clone()
 label_matrix_debug = label_matrix.clone()
 
-feature_to_plot, labels_to_plot = 1, [0, 1, 2]  # choosing which feature and labels to show in plots
+feature_to_plot, labels_to_plot = 1, [0, 1, 2]
 feature_name, label_names = 'Reduced temperature',\
                              ['Reduced pressure', 'Specific liquid volume', 'Specific vapour volume']
 
@@ -74,5 +73,4 @@ neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_r
                             learning_rate=0.001, epochs=500, loss_func=nn.MSELoss(),
                             hidden_neuron_range=range(1, 100, 5))
 
-
-# also need to write additional code to validate model
+# TODO: write additional code to validate model

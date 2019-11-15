@@ -218,6 +218,7 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
 def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
                                 learning_rate=0.001, epochs=500, loss_func=nn.MSELoss(),
                                 hidden_neuron_range=range(1, 100, 5)):
+    # TODO: Test this function!
     fitting_fig = plt.figure()
     move_figure(position="left")
     loss_plot = fitting_fig.add_subplot(1, 3, 1)
