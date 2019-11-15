@@ -212,7 +212,7 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
 
         train_data_metrics = [train_loss_scaled, train_R_sq_scaled, train_AAD_scaled]
         test_data_metrics = [test_loss_scaled, test_R_sq_scaled, test_AAD_scaled]
-    return train_data_metrics, test_data_metrics
+        return train_data_metrics, test_data_metrics
 
 
 def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
