@@ -102,10 +102,10 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
     input_neurons, output_neurons = features.shape[1], labels.shape[1]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
     model.train()
-    print(model)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
     x, y = features[training_range], labels[training_range]
     if show_progress:
+        print(model)
         loss_fig = plt.figure()
         move_figure(position="left")
         label_fig = plt.figure()
@@ -125,7 +125,8 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
 
         if epoch > 1 and show_progress is True:
             loss_plot.set(ylim=(0, 3*loss.item()), xlim=(0, epoch))
-        loss_plot.scatter(epoch, loss.item(), s=1)
+        if show_progress is True:
+            loss_plot.scatter(epoch, loss.item(), s=1)
         if epoch == 0 and show_progress is True:
             loss_fig.show()
             label_fig.show()
@@ -209,14 +210,17 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
             lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
             comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
             comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
+            model_fig.canvas.start_event_loop(0.001)
+            comparison_fig.canvas.start_event_loop(0.001)
     train_data_metrics = [train_loss_scaled, train_R_sq_scaled, train_AAD_scaled]
     test_data_metrics = [test_loss_scaled, test_R_sq_scaled, test_AAD_scaled]
+
     return train_data_metrics, test_data_metrics
 
 
 def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
                                 learning_rate=0.001, epochs=500, loss_func=nn.MSELoss(),
-                                hidden_neuron_range=range(1, 100, 5)):
+                                hidden_neuron_range=[4, 8, 16, 32, 64]):
     # TODO: Test this function!
     fitting_fig = plt.figure()
     move_figure(position="left")
@@ -227,15 +231,15 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
     for i in hidden_neuron_range:
         scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix.clone(), training_range)
         scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix.clone(), training_range)
-
+        print('Training a network for', i, ' hidden nodes with 2 hidden layers')
         trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
                                             epochs=epochs, learning_rate=learning_rate, hidden_neurons=i,
                                             loss_func=loss_func, show_progress=False)
 
         train_data_metrics, test_data_metrics = \
-            neural_network_evaluator(scaled_feature_matrix.clone(), scaled_label_matrix.copy(),
+            neural_network_evaluator(scaled_feature_matrix.clone(), scaled_label_matrix.clone(),
                                      feature_matrix, label_matrix, training_range, test_range, trained_nn,
-                                     draw_plots=False)
+                                     draw_plots=False, y_scaling_parameters=label_scaling_parameters)
 
         train_loss.append(train_data_metrics[0]), test_loss.append(test_data_metrics[0])
         train_R_sq.append(train_data_metrics[1]), test_R_sq.append(test_data_metrics[1])
@@ -244,11 +248,14 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
     loss_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled loss')
     loss_plot.plot(hidden_neuron_range, train_loss, label='train')
     loss_plot.plot(hidden_neuron_range, test_loss, label='test')
+    loss_plot.legend()
     R_sq_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled R_sq')
     R_sq_plot.plot(hidden_neuron_range, train_R_sq, label='train')
     R_sq_plot.plot(hidden_neuron_range, test_R_sq, label='test')
+    R_sq_plot.legend()
     AAD_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled AAD')
     AAD_plot.plot(hidden_neuron_range, train_AAD, label='train')
     AAD_plot.plot(hidden_neuron_range, test_AAD, label='test')
+    AAD_plot.legend()
     plt.show()
     return True
