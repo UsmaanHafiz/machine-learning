@@ -139,13 +139,17 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
                                       y[:, label_plot_index[i]].data.numpy(), color='orange', s=1)
                 label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
                                       y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
+
             label_fig.canvas.start_event_loop(0.001)
+            loss_fig.canvas.start_event_loop(0.001)
     return model
 
 
-def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_range, model, x_label='Temperature /K',
-                             y_label='Vapour pressure /Pa', feature_plot_index=0, label_plot_index=[0],
-                             y_scaling_parameters=None, draw_plots=True, plot_for_test_range=True, plot_range=None):
+def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_range, model,
+                             x_label='Temperature /K', y_label='Vapour pressure /Pa',
+                             feature_plot_index=0, label_plot_index=[0],
+                             y_scaling_parameters=None, draw_plots=True,
+                             plot_for_test_range=True, plot_range=None):
     # model.eval()
     y_model_scaled = model(x_scaled)
     if y_scaling_parameters is not None:

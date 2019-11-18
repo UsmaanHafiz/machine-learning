@@ -21,9 +21,16 @@ num_F = data_values[np.where(data_headers == 'No. of F')[0][0]]
 num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
 
 reduced_temp = temp/temp_crit_saft
-features = [mol_weight, reduced_temp, num_C, num_F, omega]
+temp_reciprocal = np.ones(temp.shape)/temp
+# features = [mol_weight, reduced_temp, num_C, num_F, omega]  # OLD
+features = [mol_weight, temp_reciprocal, num_C, num_F, omega]  # NEW
+
 reduced_pressure = pressure/pressure_crit_saft
-labels = [reduced_pressure, spec_vol_liq, spec_vol_vap]
+ln_pressure = np.log(pressure)
+rho_liq = np.ones(spec_vol_liq.shape)/spec_vol_liq
+rho_vap = np.ones(spec_vol_vap.shape)/spec_vol_vap
+# labels = [reduced_pressure, spec_vol_liq, spec_vol_vap] # OLD
+labels = [ln_pressure, rho_liq, rho_vap]  # NEW
 
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
     nn_data_preparer(features, labels)
@@ -39,7 +46,7 @@ validation_range = [j * 100 for j in                           # validating on 3
                     random.sample(list([x for x in list(range(0, 23))
                                         if x not in [i / 100 for i in test_range]]), 3)]
 for p in range(len(test_range)):
-    for q in range(99):
+    for q in range(99):                      # populating remainder of data ranges (x01 to x99)
         test_range.append(test_range[p] + q + 1)
         validation_range.append(validation_range[p] + q + 1)
 training_range = list(z for z in list(range(0, 2300)) if z not in (test_range, validation_range))
@@ -62,12 +69,12 @@ train_data_metrics, test_data_metrics = \
                              x_label=feature_name, y_label=label_names,
                              y_scaling_parameters=label_scaling_parameters, draw_plots=True)
 
-neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
-                         feature_matrix, label_matrix, training_range, test_range, trained_nn,
-                         label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
-                         x_label=feature_name, y_label=label_names,
-                         y_scaling_parameters=label_scaling_parameters, draw_plots=True,
-                         plot_for_test_range=False, plot_range=range(0, 2300))
+# neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
+#                          feature_matrix, label_matrix, training_range, test_range, trained_nn,
+#                          label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
+#                          x_label=feature_name, y_label=label_names,
+#                          y_scaling_parameters=label_scaling_parameters, draw_plots=True,
+#                          plot_for_test_range=False, plot_range=list(range(0, 2300)))
 
 # neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
 #                             learning_rate=0.003, epochs=5000, loss_func=nn.MSELoss(),
@@ -75,6 +82,6 @@ neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
 
 # TODO: Try fitting with ln(P), 1/T, densities instead of volumes, maybe compressibility factors
 # TODO: write additional code to validate model
-# TODO: Use outliers in training set?
+# TODO: Use outliers in training set? # TODO: to do this need to plot each compound's data
+#  individually to examine trends
 # TODO: Generate additional high temp data range from SAFT to try to fit liquid volumes better
-# TODO: Get polarity/dipole moment values from Gaussian?
