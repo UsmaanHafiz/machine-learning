@@ -22,15 +22,15 @@ num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
 
 reduced_temp = temp/temp_crit_saft
 temp_reciprocal = np.ones(temp.shape)/temp
-# features = [mol_weight, reduced_temp, num_C, num_F, omega]  # OLD
-features = [mol_weight, temp_reciprocal, num_C, num_F, omega]  # NEW
+features = [mol_weight, reduced_temp, num_C, num_F, omega]  # OLD
+# features = [mol_weight, temp_reciprocal, num_C, num_F, omega]  # NEW
 
 reduced_pressure = pressure/pressure_crit_saft
 ln_pressure = np.log(pressure)
 rho_liq = np.ones(spec_vol_liq.shape)/spec_vol_liq
 rho_vap = np.ones(spec_vol_vap.shape)/spec_vol_vap
-# labels = [reduced_pressure, spec_vol_liq, spec_vol_vap] # OLD
-labels = [ln_pressure, rho_liq, rho_vap]  # NEW
+labels = [reduced_pressure, spec_vol_liq, spec_vol_vap] # OLD
+# labels = [ln_pressure, rho_liq, rho_vap]  # NEW
 
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
     nn_data_preparer(features, labels)
@@ -57,7 +57,7 @@ scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix
 scaled_feature_matrix_debug, scaled_label_matrix_debug = scaled_feature_matrix.clone(), scaled_label_matrix.clone()
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=5000, learning_rate=0.003, hidden_neurons=16,
+                                    epochs=1000, learning_rate=0.003, hidden_neurons=8,
                                     loss_func=nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)

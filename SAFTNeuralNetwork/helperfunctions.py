@@ -168,6 +168,9 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
 
     print('Training data:')
     print('scaled MSE is ', train_loss_scaled, ' and scaled AAD is ', train_AAD_scaled)
+    for i in range(len(label_plot_index)):
+        print('AADs computed for each label are:')
+        print(y_label[i], '', indv_AAD[i], '%')
     print('Test data:')
     print('scaled MSE is ', test_loss_scaled, ' and scaled AAD is ', test_AAD_scaled)
     if plot_for_test_range is True:
@@ -187,7 +190,7 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
             model_plot[i].scatter(x[plot_range, feature_plot_index].numpy(),
                                   y_model[plot_range, label_plot_index[i]].data.numpy(),
                                   color='blue', s=1,
-                                  label='AAD:{}'.format(indv_AAD[i]))
+                                  label='ANN with AAD:{}'.format(indv_AAD[i]))
             x_range = np.linspace(min(x[plot_range, feature_plot_index].data.numpy()),
                                   max(x[plot_range, feature_plot_index].data.numpy()), 5)
             y_range = np.linspace(min(y[plot_range, label_plot_index[i]].data.numpy()),
