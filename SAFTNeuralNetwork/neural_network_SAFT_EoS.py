@@ -22,15 +22,15 @@ num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
 
 reduced_temp = temp/temp_crit_saft
 temp_reciprocal = np.ones(temp.shape)/temp
-# features = [mol_weight, reduced_temp, num_C, num_F, omega]  # OLD
-features = [mol_weight, temp_reciprocal, num_C, num_F, omega]  # NEW
+features = [mol_weight, reduced_temp, num_C, num_F, omega]  # OLD
+# features = [mol_weight, temp_reciprocal, num_C, num_F, omega]  # NEW
 
 reduced_pressure = pressure/pressure_crit_saft
 ln_pressure = np.log(pressure)
 rho_liq = np.ones(spec_vol_liq.shape)/spec_vol_liq
 rho_vap = np.ones(spec_vol_vap.shape)/spec_vol_vap
-# labels = [reduced_pressure, spec_vol_liq, spec_vol_vap] # OLD
-labels = [ln_pressure, rho_liq, rho_vap]  # NEW
+labels = [reduced_pressure, spec_vol_liq, spec_vol_vap] # OLD
+# labels = [ln_pressure, rho_liq, rho_vap]  # NEW
 
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
     nn_data_preparer(features, labels)
@@ -57,7 +57,7 @@ scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix
 scaled_feature_matrix_debug, scaled_label_matrix_debug = scaled_feature_matrix.clone(), scaled_label_matrix.clone()
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=5000, learning_rate=0.003, hidden_neurons=16,
+                                    epochs=5000, learning_rate=0.003, hidden_neurons=8,
                                     loss_func=nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
@@ -69,16 +69,20 @@ train_data_metrics, test_data_metrics = \
                              x_label=feature_name, y_label=label_names,
                              y_scaling_parameters=label_scaling_parameters, draw_plots=True)
 
-# neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
-#                          feature_matrix, label_matrix, training_range, test_range, trained_nn,
-#                          label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
-#                          x_label=feature_name, y_label=label_names,
-#                          y_scaling_parameters=label_scaling_parameters, draw_plots=True,
-#                          plot_for_test_range=False, plot_range=list(range(0, 2300)))
+neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
+                         feature_matrix, label_matrix, training_range, test_range, trained_nn,
+                         label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
+                         x_label=feature_name, y_label=label_names,
+                         y_scaling_parameters=label_scaling_parameters, draw_plots=True,
+                         plot_for_test_range_only=False, plot_range=list(range(0, 2300)))
 
 # neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
-#                             learning_rate=0.003, epochs=5000, loss_func=nn.MSELoss(),
-#                             hidden_neuron_range=[4, 6, 8, 16, 32, 48, 64])
+#                             learning_rate=0.003, epochs=10000, loss_func=nn.MSELoss(),
+#                             hidden_neuron_range=[2, 4, 5, 6, 7, 8, 10, 12, 14, 6, 32, 48, 64])
+#
+# neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
+#                             learning_rate=0.003, epochs=10000, loss_func=nn.MSELoss(),
+#                             hidden_neuron_range=[2, 4, 5, 6, 7, 8, 10, 12, 14, 6, 32, 48, 64])
 
 # TODO: Try fitting with ln(P), 1/T, densities instead of volumes, maybe compressibility factors
 # TODO: write additional code to validate model

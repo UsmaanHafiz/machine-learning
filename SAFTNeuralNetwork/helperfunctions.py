@@ -124,8 +124,10 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
         optimizer.zero_grad()  # zeroing gradients
 
         if epoch > 1 and show_progress is True:
+            print('rescaling loss axes')
             loss_plot.set(ylim=(0, 3*loss.item()), xlim=(0, epoch))
         if show_progress is True:
+            print('plotting loss')
             loss_plot.scatter(epoch, loss.item(), s=1)
         if epoch == 0 and show_progress is True:
             loss_fig.show()
@@ -140,8 +142,8 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
                 label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
                                       y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
 
-            label_fig.canvas.start_event_loop(0.001)
-            loss_fig.canvas.start_event_loop(0.001)
+            label_fig.canvas.start_event_loop(0.01)
+            loss_fig.canvas.start_event_loop(0.01)
     return model
 
 
@@ -149,7 +151,7 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
                              x_label='Temperature /K', y_label='Vapour pressure /Pa',
                              feature_plot_index=0, label_plot_index=[0],
                              y_scaling_parameters=None, draw_plots=True,
-                             plot_for_test_range=True, plot_range=None):
+                             plot_for_test_range_only=True, plot_range=None):
     # model.eval()
     y_model_scaled = model(x_scaled)
     if y_scaling_parameters is not None:
@@ -174,7 +176,7 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
     print('Test data:')
     print('scaled MSE is ', test_loss_scaled, ', scaled R_squared is ', test_R_sq_scaled,
           ', and scaled AAD is ', test_AAD_scaled)
-    if plot_for_test_range is True:
+    if plot_for_test_range_only is True:
         plot_range = test_range
     if draw_plots is True:
         model_fig, comparison_fig = plt.figure(), plt.figure()
@@ -214,8 +216,8 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
             lim = max(comparison_plot[i].get_xlim()[1], comparison_plot[i].get_ylim()[1])
             comparison_plot[i].set(xlim=(0, lim), ylim=(0, lim))
             comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
-            model_fig.canvas.start_event_loop(0.001)
-            comparison_fig.canvas.start_event_loop(0.001)
+            model_fig.canvas.start_event_loop(0.01)
+            comparison_fig.canvas.start_event_loop(0.01)
     train_data_metrics = [train_loss_scaled, train_R_sq_scaled, train_AAD_scaled]
     test_data_metrics = [test_loss_scaled, test_R_sq_scaled, test_AAD_scaled]
 
@@ -250,6 +252,7 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
         scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix.clone(), training_range)
         scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix.clone(), training_range)
         print('Training a network for', i, ' hidden nodes with 2 hidden layers')
+
         trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
                                             epochs=epochs, learning_rate=learning_rate, hidden_neurons=i,
                                             loss_func=loss_func, show_progress=False)
@@ -258,6 +261,7 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
             neural_network_evaluator(scaled_feature_matrix.clone(), scaled_label_matrix.clone(),
                                      feature_matrix, label_matrix, training_range, test_range, trained_nn,
                                      draw_plots=False, y_scaling_parameters=label_scaling_parameters)
+
         loss_plot.scatter(i, train_data_metrics[0], color='xkcd:orange red')
         loss_plot.scatter(i, test_data_metrics[0], color='xkcd:light aqua')
         R_sq_plot.scatter(i, train_data_metrics[1], color='xkcd:orange red')
