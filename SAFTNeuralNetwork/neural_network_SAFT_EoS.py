@@ -90,5 +90,6 @@ neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
 #                             learning_rate=0.003, epochs=5000, loss_func=nn.MSELoss(),
 #                             hidden_neuron_range=[4, 6, 8, 16, 32, 48, 64])
 
-# TODO: write additional code to validate model
 # TODO: Generate additional high temp data range from SAFT to try to fit liquid volumes better
+#   code written, need to run and generate data
+# TODO: Validation?
