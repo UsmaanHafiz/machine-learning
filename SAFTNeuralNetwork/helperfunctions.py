@@ -122,26 +122,24 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
         loss.backward()
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
-
-        if epoch > 1 and show_progress is True:
-            loss_plot.set(ylim=(0, 3*loss.item()), xlim=(0, epoch))
         if show_progress is True:
+            if epoch > 1:
+                loss_plot.set(ylim=(0, 3*loss.item()), xlim=(0, epoch))
             loss_plot.scatter(epoch, loss.item(), s=1)
-        if epoch == 0 and show_progress is True:
-            loss_fig.show()
-            label_fig.show()
-        if epoch % 200 == 0 and show_progress is True:
-            print('epoch: {}; loss: {}'.format(epoch, loss.item()))
-            for i in range(len(label_plot_index)):
-                label_plot[i].cla()
-                label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])  # TODO: add 'scaled' into label
-                label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
-                                      y[:, label_plot_index[i]].data.numpy(), color='orange', s=1)
-                label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
-                                      y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
-
-            label_fig.canvas.start_event_loop(0.001)
-            loss_fig.canvas.start_event_loop(0.001)
+            if epoch == 0:
+                loss_fig.show()
+                label_fig.show()
+            if epoch % 200 == 0:
+                print('epoch: {}; loss: {}'.format(epoch, loss.item()))
+                for i in range(len(label_plot_index)):
+                    label_plot[i].cla()
+                    label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])  # TODO: add 'scaled' into label
+                    label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
+                                          y[:, label_plot_index[i]].data.numpy(), color='orange', s=1)
+                    label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
+                                          y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
+                label_fig.canvas.start_event_loop(0.001)
+                loss_fig.canvas.start_event_loop(0.001)
     return model
 
 
@@ -161,19 +159,17 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
     loss_func = torch.nn.MSELoss()
     train_loss_scaled = loss_func(y_model_scaled[training_range], y_scaled[training_range]).item()
     test_loss_scaled = loss_func(y_model_scaled[test_range], y_scaled[test_range]).item()
-    train_R_sq_scaled, train_AAD_scaled = fit_evaluator(y_scaled[training_range], y_model_scaled[training_range])
-    test_R_sq_scaled, test_AAD_scaled = fit_evaluator(y_scaled[test_range], y_model_scaled[test_range])
-    indv_R_sq, indv_AAD = [], []
+    train_AAD_scaled = fit_evaluator(y_scaled[training_range], y_model_scaled[training_range])[1]
+    test_AAD_scaled = fit_evaluator(y_scaled[test_range], y_model_scaled[test_range])[1]
+    indv_AAD = []
     for i in label_plot_index:
-        values = fit_evaluator(y[test_range, i], y_model[test_range, i])
-        indv_R_sq.append(values[0]), indv_AAD.append(values[1])
+        value = fit_evaluator(y[test_range, i], y_model[test_range, i])[1]
+        indv_AAD.append(value)
 
     print('Training data:')
-    print('scaled MSE is ', train_loss_scaled, ', scaled R_squared is ', train_R_sq_scaled,
-          ', and scaled AAD is ', train_AAD_scaled)
+    print('scaled MSE is ', train_loss_scaled, ' and scaled AAD is ', train_AAD_scaled)
     print('Test data:')
-    print('scaled MSE is ', test_loss_scaled, ', scaled R_squared is ', test_R_sq_scaled,
-          ', and scaled AAD is ', test_AAD_scaled)
+    print('scaled MSE is ', test_loss_scaled, ' and scaled AAD is ', test_AAD_scaled)
     if plot_for_test_range is True:
         plot_range = test_range
     if draw_plots is True:
@@ -191,7 +187,7 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
             model_plot[i].scatter(x[plot_range, feature_plot_index].numpy(),
                                   y_model[plot_range, label_plot_index[i]].data.numpy(),
                                   color='blue', s=1,
-                                  label='ANN model \n R^2:{} AAD:{}'.format(indv_R_sq[i], indv_AAD[i]))
+                                  label='AAD:{}'.format(indv_AAD[i]))
             x_range = np.linspace(min(x[plot_range, feature_plot_index].data.numpy()),
                                   max(x[plot_range, feature_plot_index].data.numpy()), 5)
             y_range = np.linspace(min(y[plot_range, label_plot_index[i]].data.numpy()),
@@ -216,9 +212,8 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
             comparison_plot[i].plot(np.linspace(0, lim, 5), np.linspace(0, lim, 5))
             model_fig.canvas.start_event_loop(0.001)
             comparison_fig.canvas.start_event_loop(0.001)
-    train_data_metrics = [train_loss_scaled, train_R_sq_scaled, train_AAD_scaled]
-    test_data_metrics = [test_loss_scaled, test_R_sq_scaled, test_AAD_scaled]
-
+    train_data_metrics = [train_loss_scaled, train_AAD_scaled]
+    test_data_metrics = [test_loss_scaled, test_AAD_scaled]
     return train_data_metrics, test_data_metrics
 
 
@@ -228,20 +223,15 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
     # TODO: Test this function!
     fitting_fig = plt.figure()
     move_figure(position="left")
-    loss_plot = fitting_fig.add_subplot(1, 3, 1)
-    R_sq_plot = fitting_fig.add_subplot(1, 3, 2)
-    AAD_plot = fitting_fig.add_subplot(1, 3, 3)
-    train_loss, test_loss, train_R_sq, test_R_sq, train_AAD, test_AAD = [], [], [], [], [], []
+    loss_plot = fitting_fig.add_subplot(1, 2, 1)
+    AAD_plot = fitting_fig.add_subplot(1, 2, 2)
+    train_loss, test_loss, train_AAD, test_AAD = [], [], [], []
     loss_plot.set_xlabel('Number of hidden neurons'), loss_plot.set_ylabel('Scaled loss')
-    R_sq_plot.set_xlabel('Number of hidden neurons'), R_sq_plot.set_ylabel('Scaled R_sq')
     AAD_plot.set_xlabel('Number of hidden neurons'), AAD_plot.set_ylabel('Scaled AAD')
 
     loss_plot.scatter(0, 0, label='train', color='xkcd:orange red')
     loss_plot.scatter(0, 0, label='test', color='xkcd:light aqua')
     loss_plot.legend()
-    R_sq_plot.scatter(0, 0, label='train', color = 'xkcd:orange red')
-    R_sq_plot.scatter(0, 0, label='test', color='xkcd:light aqua')
-    R_sq_plot.legend()
     AAD_plot.scatter(0, 0, label='train', color='xkcd:orange red')
     AAD_plot.scatter(0, 0, label='test', color='xkcd:light aqua')
     AAD_plot.legend()
@@ -260,20 +250,14 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
                                      draw_plots=False, y_scaling_parameters=label_scaling_parameters)
         loss_plot.scatter(i, train_data_metrics[0], color='xkcd:orange red')
         loss_plot.scatter(i, test_data_metrics[0], color='xkcd:light aqua')
-        R_sq_plot.scatter(i, train_data_metrics[1], color='xkcd:orange red')
-        R_sq_plot.scatter(i, test_data_metrics[1], color='xkcd:light aqua')
-        AAD_plot.scatter(i, train_data_metrics[2], color='xkcd:orange red')
-        AAD_plot.scatter(i, test_data_metrics[2], color='xkcd:light aqua')
+        AAD_plot.scatter(i, train_data_metrics[1], color='xkcd:orange red')
+        AAD_plot.scatter(i, test_data_metrics[1], color='xkcd:light aqua')
         fitting_fig.canvas.start_event_loop(0.001)
-
         train_loss.append(train_data_metrics[0]), test_loss.append(test_data_metrics[0])
-        train_R_sq.append(train_data_metrics[1]), test_R_sq.append(test_data_metrics[1])
-        train_AAD.append(train_data_metrics[2]), test_AAD.append(test_data_metrics[2])
+        train_AAD.append(train_data_metrics[1]), test_AAD.append(test_data_metrics[1])
 
     loss_plot.plot(hidden_neuron_range, train_loss, color='xkcd:orange red', label='train')
     loss_plot.plot(hidden_neuron_range, test_loss, color='xkcd:light aqua', label='test')
-    R_sq_plot.plot(hidden_neuron_range, train_R_sq, color='xkcd:orange red', label='train')
-    R_sq_plot.plot(hidden_neuron_range, test_R_sq, color='xkcd:light aqua', label='test')
     AAD_plot.plot(hidden_neuron_range, train_AAD, color='xkcd:orange red', label='train')
     AAD_plot.plot(hidden_neuron_range, test_AAD, color='xkcd:light aqua', label='test')
     plt.show()
