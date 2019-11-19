@@ -119,16 +119,22 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
     for epoch in range(epochs):
         y_pred = model(x)
         loss = loss_func(y_pred, y)
+        loss_test = loss_func(model(features[test_range]), labels[test_range])
         loss.backward()
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
         if show_progress is True:
-            if epoch > 1:
-                loss_plot.set(ylim=(0, 3*loss.item()), xlim=(0, epoch))
-            loss_plot.scatter(epoch, loss.item(), s=1)
             if epoch == 0:
                 loss_fig.show()
                 label_fig.show()
+                loss_plot.scatter
+                loss_plot.scatter(epoch, loss.item(), s=1, label='train', color='xkcd:orange red')
+                loss_plot.scatter(epoch, loss_test.item(), s=1, label='test', color='xkcd:light aqua')
+                loss_plot.legend()
+            if epoch > 1:
+                loss_plot.set(ylim=(0, 3*loss.item()), xlim=(0, epoch))
+                loss_plot.scatter(epoch, loss.item(), s=1, color='xkcd:orange red')
+                loss_plot.scatter(epoch, loss_test.item(), s=1, color='xkcd:light aqua')
             if epoch % 200 == 0:
                 print('epoch: {}; loss: {}'.format(epoch, loss.item()))
                 for i in range(len(label_plot_index)):
@@ -138,8 +144,8 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
                                           y[:, label_plot_index[i]].data.numpy(), color='orange', s=1)
                     label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
                                           y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
-                label_fig.canvas.start_event_loop(0.001)
-                loss_fig.canvas.start_event_loop(0.001)
+                label_fig.canvas.start_event_loop(0.01)
+                loss_fig.canvas.start_event_loop(0.01)
     return model
 
 
@@ -194,7 +200,7 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
             model_plot[i].scatter(x[plot_range, feature_plot_index].numpy(),
                                   y_model[plot_range, label_plot_index[i]].data.numpy(),
                                   color='blue', s=1,
-                                  label='ANN with AAD:{}'.format(indv_AAD[i]))
+                                  label='ANN with AAD:{}'.format(test_indv_AAD[i]))
             x_range = np.linspace(min(x[plot_range, feature_plot_index].data.numpy()),
                                   max(x[plot_range, feature_plot_index].data.numpy()), 5)
             y_range = np.linspace(min(y[plot_range, label_plot_index[i]].data.numpy()),
