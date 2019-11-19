@@ -67,6 +67,55 @@ def matrix_to_tensor(array, data_range):
     return torch.as_tensor(frame.transpose().values).float()
 
 
+def outlier_grabber(scaled_label_matrix, label_plot_index=[0], num=10):
+    outlier_compounds, lowest_deviation_compound = [], []
+    for i in range(len(label_plot_index)):
+        y_avg = np.mean(scaled_label_matrix[:, label_plot_index[i]].data.numpy())
+        deviation = []
+        for j in range(24):
+            plot_range = list(range(100))
+            plot_range = np.ones(100) * j * 100 + plot_range
+            y = scaled_label_matrix[plot_range, label_plot_index[i]].data.numpy()
+            y_avg_j = np.mean(y)
+            deviation.append(abs(y_avg - y_avg_j))
+        indices = np.argpartition(deviation, -(num+1))[-(num+1):]
+        for item in indices:
+            if item not in outlier_compounds:
+                outlier_compounds.append(item)
+        deviation = np.array(deviation)
+        lowest_deviation_compound.append(np.where(deviation == min(deviation[indices]))[0][0])
+    count = 0
+    while len(outlier_compounds) > num:
+        outlier_compounds.remove(lowest_deviation_compound[count])
+        count += 1
+    return outlier_compounds
+
+
+def indv_compound_plotter(scaled_feature_matrix, scaled_label_matrix, feature_plot_index=0, label_plot_index=[0],
+                          x_label='Reduced temperature', y_label=['Reduced pressure'], outlier_compounds=[]):
+    plots, figs = [], []
+    for i in range(len(label_plot_index)):
+        figs.append(plt.figure())
+        plots.append(figs[i].add_subplot(1, 1, 1))
+        normal_compounds = [i for i in list(range(24)) if i not in outlier_compounds]
+        for j in outlier_compounds:
+            plot_range = list(range(100))
+            plot_range = np.ones(100) * j * 100 + plot_range
+            x = scaled_feature_matrix[plot_range, feature_plot_index].data.numpy()
+            y = scaled_label_matrix[plot_range, label_plot_index[i]].data.numpy()
+            plots[i].scatter(x, y, label=j, s=0.1, color='xkcd:red')
+
+        for j in normal_compounds:
+            plot_range = list(range(100))
+            plot_range = np.ones(100) * j * 100 + plot_range
+            x = scaled_feature_matrix[plot_range, feature_plot_index].data.numpy()
+            y = scaled_label_matrix[plot_range, label_plot_index[i]].data.numpy()
+            plots[i].scatter(x, y, label=j, s=0.1, color='xkcd:green')
+
+        plots[i].set_xlabel(x_label), plots[i].set_ylabel(y_label[i])
+        plots[i].legend(loc='center right')
+
+
 def nn_data_preparer(features, labels):
     sub_range_size = int(0.4 * len(labels[0]))
     training_range = random.sample(range(0, len(labels[0])), sub_range_size)
@@ -98,13 +147,13 @@ def inverse_tensor_standardiser(tensor, scaling_parameters):
 # takes SCALED features and labels
 def neural_network_trainer(features, labels, training_range, test_range, hidden_neurons=32, learning_rate=0.001,
                            epochs=500, loss_func=nn.MSELoss(), feature_plot_index=0,  label_plot_index=[0],
-                           x_label='Reduced temperature', y_label=['Reduced pressure'], show_progress=True):
+                           x_label='Reduced temperature', y_label=['Reduced pressure'], show_plots=True):
     input_neurons, output_neurons = features.shape[1], labels.shape[1]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
     model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
     x, y = features[training_range], labels[training_range]
-    if show_progress:
+    if show_plots:
         print(model)
         loss_fig = plt.figure()
         move_figure(position="left")
@@ -123,11 +172,12 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
         loss.backward()
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
-        if show_progress is True:
+        if epoch % 200 == 0 and show_plots is False:
+            print('epoch: {}; train loss: {}, test loss: {}'.format(epoch, loss.item(), loss_test.item()))
+        if show_plots is True:
             if epoch == 0:
                 loss_fig.show()
                 label_fig.show()
-                loss_plot.scatter
                 loss_plot.scatter(epoch, loss.item(), s=1, label='train', color='xkcd:orange red')
                 loss_plot.scatter(epoch, loss_test.item(), s=1, label='test', color='xkcd:light aqua')
                 loss_plot.legend()
@@ -136,7 +186,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
                 loss_plot.scatter(epoch, loss.item(), s=1, color='xkcd:orange red')
                 loss_plot.scatter(epoch, loss_test.item(), s=1, color='xkcd:light aqua')
             if epoch % 200 == 0:
-                print('epoch: {}; loss: {}'.format(epoch, loss.item()))
+                print('epoch: {}; train loss: {}, test loss: {}'.format(epoch, loss.item(), loss_test.item()))
                 for i in range(len(label_plot_index)):
                     label_plot[i].cla()
                     label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])  # TODO: add 'scaled' into label
@@ -275,3 +325,5 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
     AAD_plot.plot(hidden_neuron_range, test_AAD, color='xkcd:light aqua', label='test')
     plt.show()
     return True
+
+
