@@ -8,7 +8,7 @@ plt.close('all')
 r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
 temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
 temp_crit_saft = data_values[np.where(data_headers == 'Predicted crit temp /K')[0][0]]
-pressure_crit_saft = data_values[np.where(data_headers == 'Predicted pressure /Pa')[0][0]]
+pressure_crit_saft = data_values[np.where(data_headers == 'Predicted crit pressure /Pa')[0][0]]
 omega = data_values[np.where(data_headers == 'Acentric factor')[0][0]]
 spec_vol_liq = data_values[np.where(data_headers == 'Liquid spec vol /[m^3/mol]')[0][0]]
 spec_vol_vap = data_values[np.where(data_headers == 'Vapour spec vol /[m^3/mol]')[0][0]]
