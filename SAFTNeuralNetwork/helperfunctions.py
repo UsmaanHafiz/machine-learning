@@ -161,18 +161,22 @@ def neural_network_evaluator(x_scaled, y_scaled, x, y, training_range, test_rang
     test_loss_scaled = loss_func(y_model_scaled[test_range], y_scaled[test_range]).item()
     train_AAD_scaled = fit_evaluator(y_scaled[training_range], y_model_scaled[training_range])[1]
     test_AAD_scaled = fit_evaluator(y_scaled[test_range], y_model_scaled[test_range])[1]
-    indv_AAD = []
+    train_indv_AAD, test_indv_AAD = [], []
     for i in label_plot_index:
-        value = fit_evaluator(y[test_range, i], y_model[test_range, i])[1]
-        indv_AAD.append(value)
+        test_value = fit_evaluator(y[test_range, i], y_model[test_range, i])[1]
+        train_value = fit_evaluator(y[training_range, i], y_model[training_range, i])[1]
+        train_indv_AAD.append(train_value), test_indv_AAD.append(test_value)
 
     print('Training data:')
     print('scaled MSE is ', train_loss_scaled, ' and scaled AAD is ', train_AAD_scaled)
+    print('AADs computed for each label are:')
     for i in range(len(label_plot_index)):
-        print('AADs computed for each label are:')
-        print(y_label[i], '', indv_AAD[i], '%')
+        print(y_label[i], '', train_indv_AAD[i], '%')
     print('Test data:')
     print('scaled MSE is ', test_loss_scaled, ' and scaled AAD is ', test_AAD_scaled)
+    print('AADs computed for each label are:')
+    for i in range(len(label_plot_index)):
+        print(y_label[i], '', test_indv_AAD[i], '%')
     if plot_for_test_range is True:
         plot_range = test_range
     if draw_plots is True:
