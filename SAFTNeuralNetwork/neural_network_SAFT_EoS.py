@@ -57,7 +57,7 @@ scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix
 scaled_feature_matrix_debug, scaled_label_matrix_debug = scaled_feature_matrix.clone(), scaled_label_matrix.clone()
 
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=1000, learning_rate=0.003, hidden_neurons=8,
+                                    epochs=500, learning_rate=0.003, hidden_neurons=8,
                                     loss_func=nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_progress=True)
