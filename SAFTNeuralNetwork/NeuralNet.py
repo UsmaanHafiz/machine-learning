@@ -6,14 +6,14 @@ class NeuralNet(nn.Module):
         super(NeuralNet, self).__init__()
         # TODO: Add variable number of layer input to class
         self.layer = nn.Sequential(
-            nn.ELU(),
+            nn.Tanh(),
             nn.Linear(input_neurons, hidden_neurons),
             nn.Tanh(),
-            nn.Linear(hidden_neurons, int(hidden_neurons/1)),
+            nn.Linear(hidden_neurons, int(hidden_neurons)),
             nn.Tanh(),
-            nn.Linear(int(hidden_neurons/1), int(hidden_neurons/1)),
+            nn.Linear(int(hidden_neurons), int(hidden_neurons/2)),
             nn.Tanh(),
-            nn.Linear(int(hidden_neurons/1), output_neurons))
+            nn.Linear(int(hidden_neurons/2), output_neurons))
 
     def forward(self, x):
         x = self.layer(x)

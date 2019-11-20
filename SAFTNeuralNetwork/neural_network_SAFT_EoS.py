@@ -78,7 +78,7 @@ indv_compound_plotter(scaled_feature_matrix, scaled_label_matrix, feature_plot_i
 
 #%%
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=5000, learning_rate=0.001, hidden_neurons=4,
+                                    epochs=20000, learning_rate=0.001, hidden_neurons=6,
                                     loss_func=nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_plots=True)
