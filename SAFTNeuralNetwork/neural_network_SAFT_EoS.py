@@ -6,7 +6,7 @@ plt.rcParams['figure.facecolor'] = 'xkcd:light periwinkle'
 plt.close('all')
 
 #%%
-(data_headers, data_values) = data_extractor(filename='data_storage2.xlsx')
+(data_headers, data_values) = data_extractor(filename='data_storage1.xlsx')
 r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
 temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
 temp_crit_saft = data_values[np.where(data_headers == 'Predicted crit temp /K')[0][0]]
@@ -25,8 +25,8 @@ dipole = data_values[np.where(data_headers == 'Dipole moment')[0][0]]
 #%%
 reduced_temp = temp/temp_crit_saft
 temp_reciprocal = np.ones(temp.shape)/temp
-features = [mol_weight, temp_reciprocal, num_C, num_F, omega, dipole]
-features = [mol_weight, reduced_temp, num_C, num_F, omega]
+features = [mol_weight, temp_reciprocal, num_C, num_F, omega]
+features = [mol_weight, reduced_temp, num_C, num_F, omega, dipole]
 
 reduced_pressure = pressure/pressure_crit_saft
 ln_pressure = np.log(pressure)
@@ -78,7 +78,7 @@ indv_compound_plotter(scaled_feature_matrix, scaled_label_matrix, feature_plot_i
 
 #%%
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=20000, learning_rate=0.001, hidden_neurons=6,
+                                    epochs=20000, learning_rate=0.001, hidden_neurons=5,
                                     loss_func=nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_plots=True)
