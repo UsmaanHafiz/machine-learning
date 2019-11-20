@@ -197,9 +197,8 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
                                           y[:, label_plot_index[i]].data.numpy(), color='orange', s=1)
                     label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
                                           y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
-                label_fig.canvas.start_event_loop(0.01)
-                loss_fig.canvas.start_event_loop(0.01)
-                plt.pause(0.001)
+                label_fig.canvas.start_event_loop(0.0001)
+                loss_fig.canvas.start_event_loop(0.0001)
     return model
 
 

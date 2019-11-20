@@ -51,11 +51,12 @@ outliers = list(outlier_grabber(tensor_standardiser(label_matrix, list(range(0, 
                                 label_plot_index=[0, 1, 2], num=5))
 
 #%%
-test_range = random.sample([x for x in list(range(0, 24)) if x not in outliers], 5)
-test_range_outliers = list([i for i in random.sample(outliers, 1)])
-test_range.append(test_range_outliers[0])
-validation_range = list([i for i in random.sample([x for x in list(range(0, 24))
-                        if x not in outliers and x not in test_range], 1)])
+test_range = random.sample([x for x in list(range(0, 24)) if x not in outliers], 6)
+# test_range_outliers = list([i for i in random.sample(outliers, 1)])
+# test_range.append(test_range_outliers[0])
+validation_range = list([i for i in random.sample(outliers, 5)])
+# validation_range += list([i for i in random.sample([x for x in list(range(0, 24))
+#                         if x not in outliers and x not in test_range], 1)])
 test_range = [i * 100 for i in test_range]
 validation_range = [i * 100 for i in validation_range]
 for p in range(len(test_range)):
@@ -77,7 +78,7 @@ indv_compound_plotter(scaled_feature_matrix, scaled_label_matrix, feature_plot_i
 
 #%%
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=1000, learning_rate=0.001, hidden_neurons=4,
+                                    epochs=5000, learning_rate=0.001, hidden_neurons=4,
                                     loss_func=nn.MSELoss(),
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_plots=True)
