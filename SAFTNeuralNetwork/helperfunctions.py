@@ -78,7 +78,7 @@ def outlier_grabber(scaled_label_matrix, label_plot_index=[0], num=10):
             y = scaled_label_matrix[plot_range, label_plot_index[i]].data.numpy()
             y_avg_j = np.mean(y)
             deviation.append(abs(y_avg - y_avg_j))
-        indices = np.argpartition(deviation, -(num+1))[-(num+1):]
+        indices = np.argpartition(deviation, -(num))[-(num):]
         for item in indices:
             if item not in outlier_compounds:
                 outlier_compounds.append(item)
@@ -86,7 +86,10 @@ def outlier_grabber(scaled_label_matrix, label_plot_index=[0], num=10):
         lowest_deviation_compound.append(np.where(deviation == min(deviation[indices]))[0][0])
     count = 0
     while len(outlier_compounds) > num:
-        outlier_compounds.remove(lowest_deviation_compound[count])
+        try:
+            outlier_compounds.remove(lowest_deviation_compound[count])
+        except ValueError:
+            pass
         count += 1
     return outlier_compounds
 
@@ -196,6 +199,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
                                           y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
                 label_fig.canvas.start_event_loop(0.01)
                 loss_fig.canvas.start_event_loop(0.01)
+                plt.pause(0.001)
     return model
 
 

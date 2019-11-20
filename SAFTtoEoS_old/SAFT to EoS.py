@@ -52,7 +52,8 @@ with open('refrigerant_parameters.csv', 'r') as csv_parameters:
         print('Critical parameters written to file for', component_name)
 
         print(''), print('VLE properties are as follows:')
-        temp_range = np.ones(100) * Tc * 0.9 - np.geomspace(0.5 * Tc, 0.9 * Tc, 100)
+        temp_range = np.ones(100) * Tc * (0.9 + 0.5) - np.geomspace(0.5 * Tc, 0.9 * Tc, 100)
+        temp_range.sort()
         with open('data_storage.csv', 'a') as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=fieldnames, dialect='excel', lineterminator='\n')
             for i in range(len(temp_range)):
