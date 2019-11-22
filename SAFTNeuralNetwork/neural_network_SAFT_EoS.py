@@ -26,19 +26,18 @@ dipole = data_values[np.where(data_headers == 'Dipole moment')[0][0]]
 
 #%%
 reduced_temp = temp/temp_crit_saft
-temp_reciprocal = np.ones(temp.shape)/temp
-features = [mol_weight, temp_reciprocal, num_C, num_F, omega, dipole]
+reduced_temp_reciprocal = np.ones(temp.shape)/reduced_temp
+features = [mol_weight, reduced_temp_reciprocal, num_C, num_F, omega, dipole]
 
 reduced_pressure = pressure/pressure_crit_saft
-ln_pressure = np.log(pressure)
+neg_ln_red_pressure = -np.log(reduced_pressure)
 rho_liq = np.ones(spec_vol_liq.shape)/spec_vol_liq
 rho_vap = np.ones(spec_vol_vap.shape)/spec_vol_vap
 ln_rho_vap = np.log(rho_vap)
-labels = [ln_pressure, rho_liq, ln_rho_vap]
-
+labels = [neg_ln_red_pressure, rho_liq, ln_rho_vap]
 feature_to_plot, labels_to_plot = 1, [0, 1, 2]
-feature_name, label_names = 'Inverse temperature',\
-                             ['ln(pressure)', 'Liquid density', 'ln(vapour density)']
+feature_name, label_names = 'Inverse reduced temperature',\
+                             ['minus ln(red pressure)', 'Liquid density', 'ln(vapour density)']
 
 #%%
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
@@ -50,7 +49,7 @@ feature_matrix, label_matrix, training_range, test_range, validation_range = \
 outliers = list(outlier_grabber(tensor_standardiser(label_matrix, list(range(0, 2400)))[0],
                                 label_plot_index=[0, 1, 2], num=6))
 
-#%%
+#%%             ### including 3 out of 6  outliers in training range
 test_range = random.sample([x for x in list(range(0, 24)) if x not in outliers], 6)
 # test_range_outliers = list([i for i in random.sample(outliers, 1)])
 # test_range.append(test_range_outliers[0])
@@ -76,12 +75,13 @@ indv_compound_plotter(scaled_feature_matrix, scaled_label_matrix, feature_plot_i
                       label_plot_index=labels_to_plot, x_label=feature_name, y_label=label_names,
                       outlier_compounds=outliers)
 plt.close('all')
+
 #%%
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=3500, learning_rate=0.004, hidden_neurons=6,
-                                    loss_func=nn.MSELoss(), batch_size=16,
+                                    epochs=500, learning_rate=0.005, hidden_neurons=6,
+                                    loss_func=nn.MSELoss(), batch_size=8,
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
-                                    x_label=feature_name, y_label=label_names, show_plots=True)
+                                    x_label=feature_name, y_label=label_names, show_plots=False)
 
 train_data_metrics, test_data_metrics = \
     neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
@@ -95,6 +95,13 @@ neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
                          label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                          x_label=feature_name, y_label=label_names,
                          y_scaling_parameters=label_scaling_parameters, draw_plots=True,
+                         plot_for_test_range=False, plot_range=training_range)
+
+neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
+                         feature_matrix, label_matrix, training_range, test_range, trained_nn,
+                         label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
+                         x_label=feature_name, y_label=label_names,
+                         y_scaling_parameters=label_scaling_parameters, draw_plots=True,
                          plot_for_test_range=False, plot_range=list(i for i in list(range(0, 2400))
                                                                     if i not in validation_range))
 
@@ -102,5 +109,3 @@ neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
 # neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
 #                             learning_rate=0.003, epochs=5000, loss_func=nn.MSELoss(),
 #                             hidden_neuron_range=[4, 6, 8, 16, 32, 48, 64])
-
-# TODO: Validation?
