@@ -187,8 +187,8 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
             y_pred = model(x_batch)
             loss_batch = loss_func(y_pred, y_batch)
             loss_batch.backward()
-            optimizer.step()  # updating parameters
-            optimizer.zero_grad()  # zeroing gradients
+        optimizer.step()  # updating parameters
+        optimizer.zero_grad()  # zeroing gradients
 
         loss_epoch_train = loss_func(model(features[training_range]), labels[training_range])
         loss_epoch_test = loss_func(model(features[test_range]), labels[test_range])
