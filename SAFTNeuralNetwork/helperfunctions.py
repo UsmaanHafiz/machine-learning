@@ -90,6 +90,8 @@ def outlier_grabber(scaled_label_matrix, label_plot_index=[0], num=10):
             outlier_compounds.remove(lowest_deviation_compound[count])
         except ValueError:
             pass
+        except IndexError:
+            outlier_compounds.remove(outlier_compounds[(random.sample(range(len(outlier_compounds)), 1))[0]])
         count += 1
     return outlier_compounds
 
@@ -149,18 +151,21 @@ def inverse_tensor_standardiser(tensor, scaling_parameters):
 
 # takes SCALED features and labels
 def neural_network_trainer(features, labels, training_range, test_range, hidden_neurons=32, learning_rate=0.001,
-                           epochs=500, loss_func=nn.MSELoss(), feature_plot_index=0,  label_plot_index=[0],
+                           epochs=500, batch_size=64, loss_func=nn.MSELoss(), feature_plot_index=0,  label_plot_index=[0],
                            x_label='Reduced temperature', y_label=['Reduced pressure'], show_plots=True):
     input_neurons, output_neurons = features.shape[1], labels.shape[1]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
     model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
     x, y = features[training_range], labels[training_range]
+    num_batches_minus_one = int(x.shape[0] / batch_size)
+
     if show_plots:
         print(model)
         loss_fig = plt.figure()
         move_figure(position="left")
         label_fig = plt.figure()
+        label_fig.suptitle('Scaled model vs data')
         move_figure(position="right")
         loss_plot = loss_fig.add_subplot(1, 1, 1)
         loss_plot.set_xlabel('Epoch'), loss_plot.set_ylabel('Loss')
@@ -169,34 +174,50 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
             label_plot.append(label_fig.add_subplot(1, len(label_plot_index), i+1))
 
     for epoch in range(epochs):
-        y_pred = model(x)
-        loss = loss_func(y_pred, y)
-        loss_test = loss_func(model(features[test_range]), labels[test_range])
-        loss.backward()
-        optimizer.step()  # updating parameters
-        optimizer.zero_grad()  # zeroing gradients
-        if epoch % 200 == 0 and show_plots is False:
-            print('epoch: {}; train loss: {}, test loss: {}'.format(epoch, loss.item(), loss_test.item()))
+        batch_indices_list = []
+        for i in range(num_batches_minus_one):
+            batch_indices_list_flat = [item for sublist in batch_indices_list for item in sublist]
+            remaining_sample_space = [i for i in list(range(x.shape[0])) if i not in batch_indices_list_flat]
+            batch_indices_list.append(random.sample(remaining_sample_space, batch_size))
+        batch_indices_list.append([i for i in list(range(x.shape[0])) if i not in
+                                   [item for sublist in batch_indices_list for item in sublist]])
+        for batch_indices in batch_indices_list:
+            x_batch = x[batch_indices]
+            y_batch = y[batch_indices]
+            y_pred = model(x_batch)
+            loss_batch = loss_func(y_pred, y_batch)
+            loss_batch.backward()
+            optimizer.step()  # updating parameters
+            optimizer.zero_grad()  # zeroing gradients
+
+        loss_epoch_train = loss_func(model(features[training_range]), labels[training_range])
+        loss_epoch_test = loss_func(model(features[test_range]), labels[test_range])
+
+        if epoch % 50 == 0 and show_plots is False:
+            print('epoch: {}; train loss: {}, test loss: {}'.format(epoch, loss_epoch_train.item(),
+                                                                    loss_epoch_test.item()))
         if show_plots is True:
             if epoch == 0:
                 loss_fig.show()
                 label_fig.show()
-                loss_plot.scatter(epoch, loss.item(), s=1, label='train', color='xkcd:orange red')
-                loss_plot.scatter(epoch, loss_test.item(), s=1, label='test', color='xkcd:light aqua')
+                loss_plot.scatter(epoch, loss_epoch_train.item(), s=1, label='train', color='xkcd:orange red')
+                loss_plot.scatter(epoch, loss_epoch_test.item(), s=1, label='test', color='xkcd:light aqua')
                 loss_plot.legend()
             if epoch > 1:
-                loss_plot.set(ylim=(0, 3*loss.item()), xlim=(0, epoch))
-                loss_plot.scatter(epoch, loss.item(), s=1, color='xkcd:orange red')
-                loss_plot.scatter(epoch, loss_test.item(), s=1, color='xkcd:light aqua')
-            if epoch % 200 == 0:
-                print('epoch: {}; train loss: {}, test loss: {}'.format(epoch, loss.item(), loss_test.item()))
+                loss_plot.set(ylim=(0, 1.5*loss_epoch_test.item()), xlim=(0, epoch))
+                loss_plot.scatter(epoch, loss_epoch_train.item(), s=1, color='xkcd:orange red')
+                loss_plot.scatter(epoch, loss_epoch_test.item(), s=1, color='xkcd:light aqua')
+
+            if epoch % 50 == 0:
+                print('epoch: {}; train loss: {}, test loss: {}'.format(epoch, loss_epoch_train.item(),
+                                                                        loss_epoch_test.item()))
                 for i in range(len(label_plot_index)):
                     label_plot[i].cla()
-                    label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])  # TODO: add 'scaled' into label
+                    label_plot[i].set_xlabel(x_label), label_plot[i].set_ylabel(y_label[i])
                     label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
                                           y[:, label_plot_index[i]].data.numpy(), color='orange', s=1)
                     label_plot[i].scatter(x[:, feature_plot_index].data.numpy(),
-                                          y_pred[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
+                                          model(x)[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
                 label_fig.canvas.start_event_loop(0.0001)
                 loss_fig.canvas.start_event_loop(0.0001)
     return model

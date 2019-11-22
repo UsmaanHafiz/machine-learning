@@ -6,7 +6,9 @@ plt.rcParams['figure.facecolor'] = 'xkcd:light periwinkle'
 plt.close('all')
 
 #%%
-(data_headers, data_values) = data_extractor(filename='data_storage1.xlsx')
+(data_headers, data_values) = data_extractor(filename='data_storage2.xlsx')
+
+#%%
 r_names = data_values[np.where(data_headers == 'Refrigerant')[0][0]]
 temp = data_values[np.where(data_headers == 'Temp /K')[0][0]]
 temp_crit_saft = data_values[np.where(data_headers == 'Predicted crit temp /K')[0][0]]
@@ -25,19 +27,18 @@ dipole = data_values[np.where(data_headers == 'Dipole moment')[0][0]]
 #%%
 reduced_temp = temp/temp_crit_saft
 temp_reciprocal = np.ones(temp.shape)/temp
-features = [mol_weight, temp_reciprocal, num_C, num_F, omega]
-features = [mol_weight, reduced_temp, num_C, num_F, omega, dipole]
+features = [mol_weight, temp_reciprocal, num_C, num_F, omega, dipole]
 
 reduced_pressure = pressure/pressure_crit_saft
 ln_pressure = np.log(pressure)
 rho_liq = np.ones(spec_vol_liq.shape)/spec_vol_liq
 rho_vap = np.ones(spec_vol_vap.shape)/spec_vol_vap
-labels = [ln_pressure, rho_liq, rho_vap]
-labels = [reduced_pressure, spec_vol_liq, spec_vol_vap]
+ln_rho_vap = np.log(rho_vap)
+labels = [ln_pressure, rho_liq, ln_rho_vap]
 
 feature_to_plot, labels_to_plot = 1, [0, 1, 2]
 feature_name, label_names = 'Inverse temperature',\
-                             ['ln(pressure)', 'Liquid density', 'Vapour density']
+                             ['ln(pressure)', 'Liquid density', 'ln(vapour density)']
 
 #%%
 feature_matrix, label_matrix, training_range, test_range, validation_range = \
@@ -45,16 +46,15 @@ feature_matrix, label_matrix, training_range, test_range, validation_range = \
 # feature_matrix_debug = feature_matrix.clone()
 # label_matrix_debug = label_matrix.clone()
 
-
 #%%
 outliers = list(outlier_grabber(tensor_standardiser(label_matrix, list(range(0, 2400)))[0],
-                                label_plot_index=[0, 1, 2], num=5))
+                                label_plot_index=[0, 1, 2], num=6))
 
 #%%
 test_range = random.sample([x for x in list(range(0, 24)) if x not in outliers], 6)
 # test_range_outliers = list([i for i in random.sample(outliers, 1)])
 # test_range.append(test_range_outliers[0])
-validation_range = list([i for i in random.sample(outliers, 5)])
+validation_range = list([i for i in random.sample(outliers, 3)])
 # validation_range += list([i for i in random.sample([x for x in list(range(0, 24))
 #                         if x not in outliers and x not in test_range], 1)])
 test_range = [i * 100 for i in test_range]
@@ -75,11 +75,11 @@ scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix
 indv_compound_plotter(scaled_feature_matrix, scaled_label_matrix, feature_plot_index=feature_to_plot,
                       label_plot_index=labels_to_plot, x_label=feature_name, y_label=label_names,
                       outlier_compounds=outliers)
-
+plt.close('all')
 #%%
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=20000, learning_rate=0.001, hidden_neurons=5,
-                                    loss_func=nn.MSELoss(),
+                                    epochs=3500, learning_rate=0.001, hidden_neurons=6,
+                                    loss_func=nn.MSELoss(), batch_size=16,
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_plots=True)
 
@@ -95,7 +95,8 @@ neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
                          label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                          x_label=feature_name, y_label=label_names,
                          y_scaling_parameters=label_scaling_parameters, draw_plots=True,
-                         plot_for_test_range=False, plot_range=list(range(0, 2400)))
+                         plot_for_test_range=False, plot_range=list(i for i in list(range(0, 2400))
+                                                                    if i not in validation_range))
 
 #%%
 # neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
