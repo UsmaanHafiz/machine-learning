@@ -8,8 +8,6 @@ class NeuralNet(nn.Module):
         self.layer = nn.Sequential(
             nn.Linear(input_neurons, int(hidden_neurons)),
             nn.Tanh(),
-            nn.Linear(int(hidden_neurons), int(hidden_neurons)),
-            nn.Tanh(),
             nn.Linear(int(hidden_neurons), int(hidden_neurons/2)),
             nn.Tanh(),
             nn.Linear(int(hidden_neurons/2), output_neurons))

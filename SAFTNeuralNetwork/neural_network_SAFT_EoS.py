@@ -53,7 +53,7 @@ outliers = list(outlier_grabber(tensor_standardiser(label_matrix, list(range(0, 
 test_range = random.sample([x for x in list(range(0, 24)) if x not in outliers], 6)
 # test_range_outliers = list([i for i in random.sample(outliers, 1)])
 # test_range.append(test_range_outliers[0])
-validation_range = list([i for i in random.sample(outliers, 3)])
+validation_range = list([i for i in random.sample(outliers, 5)])
 # validation_range += list([i for i in random.sample([x for x in list(range(0, 24))
 #                         if x not in outliers and x not in test_range], 1)])
 test_range = [i * 100 for i in test_range]
@@ -78,10 +78,10 @@ plt.close('all')
 
 #%%
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=500, learning_rate=0.005, hidden_neurons=6,
-                                    loss_func=nn.MSELoss(), batch_size=8,
+                                    epochs=750, learning_rate=0.0055, hidden_neurons=6,
+                                    loss_func=nn.MSELoss(), batch_size=2,
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
-                                    x_label=feature_name, y_label=label_names, show_plots=False)
+                                    x_label=feature_name, y_label=label_names, show_plots=True)
 
 train_data_metrics, test_data_metrics = \
     neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
