@@ -35,15 +35,13 @@ for i in range(24):
         diff_from_point_seven_crit_T = abs(compound_T - compound_crit_T * 0.7)
     T_index = np.where(diff_from_point_seven_crit_T == min(diff_from_point_seven_crit_T))
     new_omega = -np.log10(compound_P[T_index]/compound_crit_P) - 1
-    print(new_omega)
     for j in range(100):
         omega[j + i * 100] = new_omega
 
 #%%
 reduced_temp = temp/temp_crit_saft
 reduced_temp_reciprocal = np.ones(temp.shape)/reduced_temp
-features = [mol_weight, reduced_temp_reciprocal, num_C, num_F, omega, dipole]
-
+features = [mol_weight, reduced_temp_reciprocal, num_C, num_F, omega, dipole, polarisability]
 reduced_pressure = pressure/pressure_crit_saft
 neg_ln_red_pressure = -np.log(reduced_pressure)
 rho_liq = np.ones(spec_vol_liq.shape)/spec_vol_liq
@@ -92,11 +90,19 @@ indv_compound_plotter(scaled_feature_matrix, scaled_label_matrix, feature_plot_i
 plt.close('all')
 
 #%%
+learning_rate = 0.004
+hidden_neurons = 6
+epochs = 500
+batch_size = 2
+print('Running for', epochs, 'epochs, with', hidden_neurons, 'hidden neurons', 'a batch size of',\
+      batch_size, 'and a learning rate of', learning_rate)
+#%%
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=500, learning_rate=0.003, hidden_neurons=6,
-                                    loss_func=nn.MSELoss(), batch_size=2,
+                                    epochs=epochs, learning_rate=learning_rate, hidden_neurons=hidden_neurons,
+                                    loss_func=nn.MSELoss(), batch_size=batch_size,
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_plots=True)
+
 
 train_data_metrics, test_data_metrics = \
     neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
