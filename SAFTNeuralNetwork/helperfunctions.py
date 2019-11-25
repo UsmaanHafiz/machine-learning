@@ -356,3 +356,9 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
     return True
 
 
+def import_model(input_neurons, output_neurons, hidden_neurons, filename):
+    model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
+    model.load_state_dict(torch.load(filename))
+    model.eval()
+    return model
+

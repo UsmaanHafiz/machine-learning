@@ -92,7 +92,7 @@ plt.close('all')
 #%%
 learning_rate = 0.004
 hidden_neurons = 6
-epochs = 500
+epochs = 750
 batch_size = 2
 print('Running for', epochs, 'epochs, with', hidden_neurons, 'hidden neurons', 'a batch size of',\
       batch_size, 'and a learning rate of', learning_rate)
@@ -102,6 +102,8 @@ trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, 
                                     loss_func=nn.MSELoss(), batch_size=batch_size,
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_plots=True)
+
+torch.save(trained_nn.state_dict(), 'trained_model_bs2_ep500_v2')
 
 
 train_data_metrics, test_data_metrics = \
@@ -118,15 +120,19 @@ neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
                          y_scaling_parameters=label_scaling_parameters, draw_plots=True,
                          plot_for_test_range=False, plot_range=training_range)
 
-neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
-                         feature_matrix, label_matrix, training_range, test_range, trained_nn,
-                         label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
-                         x_label=feature_name, y_label=label_names,
-                         y_scaling_parameters=label_scaling_parameters, draw_plots=True,
-                         plot_for_test_range=False, plot_range=list(i for i in list(range(0, 2400))
-                                                                    if i not in validation_range))
+# neural_network_evaluator(scaled_feature_matrix, scaled_label_matrix,
+#                          feature_matrix, label_matrix, training_range, test_range, trained_nn,
+#                          label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
+#                          x_label=feature_name, y_label=label_names,
+#                          y_scaling_parameters=label_scaling_parameters, draw_plots=True,
+#                          plot_for_test_range=False, plot_range=list(i for i in list(range(0, 2400))
+#                                                                     if i not in validation_range))
 
 #%%
 # neural_network_fitting_tool(feature_matrix, label_matrix, training_range, test_range,
 #                             learning_rate=0.003, epochs=5000, loss_func=nn.MSELoss(),
 #                             hidden_neuron_range=[4, 6, 8, 16, 32, 48, 64])
+
+#%%
+
+# trained_model = import_model()
