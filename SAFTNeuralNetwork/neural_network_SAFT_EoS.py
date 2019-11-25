@@ -24,6 +24,21 @@ num_CC = data_values[np.where(data_headers == 'No. of C=C')[0][0]]
 polarisability = data_values[np.where(data_headers == 'Polarisability')[0][0]]
 dipole = data_values[np.where(data_headers == 'Dipole moment')[0][0]]
 
+
+#%%         Recalculating omega values based on SAFT data
+for i in range(24):
+    compound_T = temp[i * 100:i * 100 + 100]
+    compound_P = pressure[i * 100:i * 100 + 100]
+    compound_crit_T = temp_crit_saft[i * 100]
+    compound_crit_P = pressure_crit_saft[i *100]
+    for j in range(100):
+        diff_from_point_seven_crit_T = abs(compound_T - compound_crit_T * 0.7)
+    T_index = np.where(diff_from_point_seven_crit_T == min(diff_from_point_seven_crit_T))
+    new_omega = -np.log10(compound_P[T_index]/compound_crit_P) - 1
+    print(new_omega)
+    for j in range(100):
+        omega[j + i * 100] = new_omega
+
 #%%
 reduced_temp = temp/temp_crit_saft
 reduced_temp_reciprocal = np.ones(temp.shape)/reduced_temp
@@ -78,7 +93,7 @@ plt.close('all')
 
 #%%
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=750, learning_rate=0.0055, hidden_neurons=6,
+                                    epochs=500, learning_rate=0.003, hidden_neurons=6,
                                     loss_func=nn.MSELoss(), batch_size=2,
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_plots=True)

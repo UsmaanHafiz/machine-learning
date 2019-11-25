@@ -78,7 +78,7 @@ def outlier_grabber(scaled_label_matrix, label_plot_index=[0], num=10):
             y = scaled_label_matrix[plot_range, label_plot_index[i]].data.numpy()
             y_avg_j = np.mean(y)
             deviation.append(abs(y_avg - y_avg_j))
-        indices = np.argpartition(deviation, -(num))[-(num):]
+        indices = np.argpartition(deviation, -num)[-num:]
         for item in indices:
             if item not in outlier_compounds:
                 outlier_compounds.append(item)
@@ -151,12 +151,13 @@ def inverse_tensor_standardiser(tensor, scaling_parameters):
 
 # takes SCALED features and labels
 def neural_network_trainer(features, labels, training_range, test_range, hidden_neurons=32, learning_rate=0.001,
-                           epochs=500, batch_size=64, loss_func=nn.MSELoss(), feature_plot_index=0,  label_plot_index=[0],
+                           epochs=500, batch_size=64, weight_decay=0.000000,
+                           loss_func=nn.MSELoss(), feature_plot_index=0,  label_plot_index=[0],
                            x_label='Reduced temperature', y_label=['Reduced pressure'], show_plots=True):
     input_neurons, output_neurons = features.shape[1], labels.shape[1]
     model = NeuralNet(input_neurons, output_neurons, hidden_neurons)
     model.train()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, amsgrad=True, weight_decay=weight_decay)
     x, y = features[training_range], labels[training_range]
     num_batches_minus_one = int(x.shape[0] / batch_size)
 
@@ -172,7 +173,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
         label_plot = []
         for i in range(len(label_plot_index)):
             label_plot.append(label_fig.add_subplot(1, len(label_plot_index), i+1))
-
+    loss_test_value_list = []
     for epoch in range(epochs):
         batch_indices_list = []
         for i in range(num_batches_minus_one):
@@ -189,17 +190,15 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
             loss_batch.backward()
         optimizer.step()  # updating parameters
         optimizer.zero_grad()  # zeroing gradients
-
         loss_epoch_train = loss_func(model(features[training_range]), labels[training_range])
         loss_epoch_test = loss_func(model(features[test_range]), labels[test_range])
-
-        if epoch % 50 == 0 and show_plots is False:
+        if epoch % 25 == 0 and show_plots is False:
             print('epoch: {}; train loss: {}, test loss: {}'.format(epoch, loss_epoch_train.item(),
                                                                     loss_epoch_test.item()))
         if show_plots is True:
             if epoch == 0:
-                loss_fig.show()
-                label_fig.show()
+                # loss_fig.show()
+                # label_fig.show()
                 loss_plot.scatter(epoch, loss_epoch_train.item(), s=1, label='train', color='xkcd:orange red')
                 loss_plot.scatter(epoch, loss_epoch_test.item(), s=1, label='test', color='xkcd:light aqua')
                 loss_plot.legend()
@@ -208,7 +207,7 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
                 loss_plot.scatter(epoch, loss_epoch_train.item(), s=1, color='xkcd:orange red')
                 loss_plot.scatter(epoch, loss_epoch_test.item(), s=1, color='xkcd:light aqua')
 
-            if epoch % 50 == 0:
+            if epoch % 25 == 0:
                 print('epoch: {}; train loss: {}, test loss: {}'.format(epoch, loss_epoch_train.item(),
                                                                         loss_epoch_test.item()))
                 for i in range(len(label_plot_index)):
@@ -220,6 +219,12 @@ def neural_network_trainer(features, labels, training_range, test_range, hidden_
                                           model(x)[:, label_plot_index[i]].data.numpy(), color='blue', s=1)
                 label_fig.canvas.start_event_loop(0.0001)
                 loss_fig.canvas.start_event_loop(0.0001)
+        if epoch % 1 == 0:
+            loss_test_value_list.append(loss_epoch_test.item())
+            if epoch >= 10:
+                if loss_epoch_test.item() > np.mean(loss_test_value_list[int(epoch/1) - 5:int(epoch/1)]):
+                    print('breaking now, test loss is increasing')
+                    return model
     return model
 
 
@@ -322,7 +327,7 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
     AAD_plot.scatter(0, 0, label='train', color='xkcd:orange red')
     AAD_plot.scatter(0, 0, label='test', color='xkcd:light aqua')
     AAD_plot.legend()
-    plt.show()
+    # plt.show()
     for i in hidden_neuron_range:
         scaled_feature_matrix, feature_scaling_parameters = tensor_standardiser(feature_matrix.clone(), training_range)
         scaled_label_matrix, label_scaling_parameters = tensor_standardiser(label_matrix.clone(), training_range)
@@ -347,7 +352,7 @@ def neural_network_fitting_tool(feature_matrix, label_matrix, training_range, te
     loss_plot.plot(hidden_neuron_range, test_loss, color='xkcd:light aqua', label='test')
     AAD_plot.plot(hidden_neuron_range, train_AAD, color='xkcd:orange red', label='train')
     AAD_plot.plot(hidden_neuron_range, test_AAD, color='xkcd:light aqua', label='test')
-    plt.show()
+    # plt.show()
     return True
 
 
