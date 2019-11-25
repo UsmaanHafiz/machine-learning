@@ -91,10 +91,17 @@ indv_compound_plotter(scaled_feature_matrix, scaled_label_matrix, feature_plot_i
                       outlier_compounds=outliers)
 plt.close('all')
 
+epoch_num = 500
+lr = 0.003
+hn = 6
+bs = 2
+
+print('Running for', epoch_num, 'epochs, with', hn, 'a batch size of', bs,
+      'and a learning rate of', 0.003)
 #%%
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
-                                    epochs=500, learning_rate=0.003, hidden_neurons=6,
-                                    loss_func=nn.MSELoss(), batch_size=2,
+                                    epochs=epoch_num, learning_rate=lr, hidden_neurons=hn,
+                                    loss_func=nn.MSELoss(), batch_size=bs,
                                     label_plot_index=labels_to_plot, feature_plot_index=feature_to_plot,
                                     x_label=feature_name, y_label=label_names, show_plots=True)
 
