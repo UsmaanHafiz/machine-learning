@@ -92,12 +92,12 @@ indv_compound_plotter(scaled_feature_matrix, scaled_label_matrix, feature_plot_i
 plt.close('all')
 
 epoch_num = 500
-lr = 0.003
+lr = 0.004
 hn = 6
 bs = 2
 
 print('Running for', epoch_num, 'epochs, with', hn, 'a batch size of', bs,
-      'and a learning rate of', 0.003)
+      'and a learning rate of', lr)
 #%%
 trained_nn = neural_network_trainer(scaled_feature_matrix, scaled_label_matrix, training_range, test_range,
                                     epochs=epoch_num, learning_rate=lr, hidden_neurons=hn,
